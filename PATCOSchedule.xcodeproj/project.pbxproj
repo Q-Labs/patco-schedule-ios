@@ -17,6 +17,7 @@
 		A10000080000000000000008 /* NextTrainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000080000000000000008 /* NextTrainView.swift */; };
 		A10000090000000000000009 /* StationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000090000000000000009 /* StationDetailView.swift */; };
 		A10000100000000000000010 /* TrainRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000100000000000000010 /* TrainRowView.swift */; };
+		A10000110000000000000011 /* BundledScheduleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000110000000000000011 /* BundledScheduleData.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 		A20000080000000000000008 /* NextTrainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextTrainView.swift; sourceTree = "<group>"; };
 		A20000090000000000000009 /* StationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationDetailView.swift; sourceTree = "<group>"; };
 		A20000100000000000000010 /* TrainRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainRowView.swift; sourceTree = "<group>"; };
+		A20000110000000000000011 /* BundledScheduleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledScheduleData.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +99,7 @@
 			children = (
 				A20000050000000000000005 /* GTFSParser.swift */,
 				A20000060000000000000006 /* ScheduleService.swift */,
+				A20000110000000000000011 /* BundledScheduleData.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -179,6 +182,7 @@
 				A10000080000000000000008 /* NextTrainView.swift in Sources */,
 				A10000090000000000000009 /* StationDetailView.swift in Sources */,
 				A10000100000000000000010 /* TrainRowView.swift in Sources */,
+				A10000110000000000000011 /* BundledScheduleData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

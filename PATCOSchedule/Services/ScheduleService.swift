@@ -1,40 +1,66 @@
 import Foundation
 import Combine
 
+enum ScheduleLoadState: Equatable {
+    case notLoaded
+    case loading
+    case loaded(source: DataSource)
+    case error(message: String)
+
+    enum DataSource: String {
+        case bundled = "Bundled Schedule"
+        case live = "Live GTFS Data"
+    }
+
+    var isLoaded: Bool {
+        if case .loaded = self { return true }
+        return false
+    }
+
+    var errorMessage: String? {
+        if case .error(let message) = self { return message }
+        return nil
+    }
+}
+
 @MainActor
 class ScheduleService: ObservableObject {
     @Published var scheduleData: ScheduleData = ScheduleData()
-    @Published var isLoading: Bool = false
-    @Published var error: Error?
+    @Published var loadState: ScheduleLoadState = .notLoaded
     @Published var lastUpdated: Date?
 
-    private let parser = GTFSParser()
-    private var refreshTimer: Timer?
+    var isLoading: Bool {
+        loadState == .loading
+    }
 
-    // Map GTFS stop IDs to our Station model
+    var hasScheduleData: Bool {
+        scheduleData.isLoaded
+    }
+
+    private let parser = GTFSParser()
     private var stopIdMapping: [String: String] = [:]
 
     init() {
-        setupStopIdMapping()
+        // Immediately load bundled data on init
+        loadBundledSchedule()
     }
 
     // MARK: - Public Methods
 
+    /// Loads schedule data - uses bundled data immediately, then optionally fetches live updates
     func loadSchedule() async {
-        isLoading = true
-        error = nil
-
-        do {
-            scheduleData = try await parser.downloadAndParseGTFS()
-            buildStopIdMapping()
-            lastUpdated = Date()
-        } catch {
-            self.error = error
-            // Fall back to bundled data if available
+        // If we don't have data yet, load bundled first
+        if !scheduleData.isLoaded {
             loadBundledSchedule()
         }
 
-        isLoading = false
+        // Then try to fetch live GTFS data in background
+        await fetchLiveGTFSData()
+    }
+
+    /// Forces a refresh from live GTFS source
+    func refreshFromLive() async {
+        await fetchLiveGTFSData()
     }
 
     func getUpcomingTrains(for station: Station, direction: TrainDirection, limit: Int = 5) -> [UpcomingTrain] {
@@ -102,8 +128,48 @@ class ScheduleService: ObservableObject {
 
     // MARK: - Private Methods
 
-    private func setupStopIdMapping() {
-        // This will be populated after loading GTFS data
+    private func loadBundledSchedule() {
+        loadState = .loading
+
+        // Generate schedule from bundled data
+        scheduleData = BundledScheduleData.generateScheduleData()
+        buildStopIdMapping()
+
+        if scheduleData.isLoaded {
+            loadState = .loaded(source: .bundled)
+            lastUpdated = Date()
+        } else {
+            loadState = .error(message: "Failed to load schedule data. Please restart the app.")
+        }
+    }
+
+    private func fetchLiveGTFSData() async {
+        // Don't show loading state if we already have bundled data
+        let hadData = scheduleData.isLoaded
+
+        if !hadData {
+            loadState = .loading
+        }
+
+        do {
+            let liveData = try await parser.downloadAndParseGTFS()
+
+            // Only use live data if it's valid
+            if liveData.isLoaded {
+                scheduleData = liveData
+                buildStopIdMapping()
+                loadState = .loaded(source: .live)
+                lastUpdated = Date()
+            }
+        } catch {
+            // If we already have bundled data, just log the error silently
+            // Otherwise show error state
+            if !hadData {
+                loadState = .error(message: "Unable to load schedule data. Please check your internet connection and try again.")
+            }
+            // If we have bundled data, keep using it - don't change the state
+            print("Failed to fetch live GTFS data: \(error.localizedDescription)")
+        }
     }
 
     private func buildStopIdMapping() {
@@ -127,7 +193,8 @@ class ScheduleService: ObservableObject {
             if normalizedStopName.contains(stationName) ||
                stationName.contains(normalizedStopName) ||
                normalizedStopName.contains(stationDisplayName) ||
-               stop.id.lowercased().contains(station.id.lowercased()) {
+               stop.id.lowercased().contains(station.id.lowercased()) ||
+               station.id.lowercased() == stop.id.lowercased() {
                 ids.insert(stop.id)
             }
         }
@@ -232,33 +299,5 @@ class ScheduleService: ObservableObject {
         dateComponents.second = seconds
 
         return calendar.date(from: dateComponents)
-    }
-
-    private func loadBundledSchedule() {
-        // Load bundled schedule data as fallback
-        // This uses hardcoded PATCO schedule data
-        if let bundledData = loadBundledGTFSData() {
-            scheduleData = bundledData
-        }
-    }
-
-    private func loadBundledGTFSData() -> ScheduleData? {
-        // Create bundled schedule data based on known PATCO stations
-        // This serves as a fallback when network is unavailable
-        var data = ScheduleData()
-
-        // Add stops
-        data.stops = Station.allStations.map { station in
-            GTFSStop(
-                id: station.id,
-                name: station.name,
-                latitude: nil,
-                longitude: nil
-            )
-        }
-
-        // Note: In production, you would bundle actual GTFS data
-        // For now, this provides the station structure
-        return data
     }
 }

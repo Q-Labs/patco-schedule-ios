@@ -26,21 +26,31 @@ struct NextTrainView: View {
             }
             .padding(.top, 20)
 
-            if !scheduleService.isLoading {
+            // Error state
+            if let errorMessage = scheduleService.loadState.errorMessage {
+                ScheduleErrorView(message: errorMessage) {
+                    Task {
+                        await scheduleService.loadSchedule()
+                        refreshTrains()
+                    }
+                }
+            } else if !scheduleService.isLoading {
                 // Next trains cards
                 HStack(spacing: 16) {
                     // Westbound (to Philly)
                     NextTrainCard(
                         direction: .westbound,
                         train: westboundTrain,
-                        stationOrder: station.order
+                        stationOrder: station.order,
+                        hasScheduleData: scheduleService.hasScheduleData
                     )
 
                     // Eastbound (to Lindenwold)
                     NextTrainCard(
                         direction: .eastbound,
                         train: eastboundTrain,
-                        stationOrder: station.order
+                        stationOrder: station.order,
+                        hasScheduleData: scheduleService.hasScheduleData
                     )
                 }
                 .padding(.horizontal)
@@ -48,9 +58,20 @@ struct NextTrainView: View {
 
             Spacer()
 
+            // Data source indicator
+            if case .loaded(let source) = scheduleService.loadState {
+                HStack(spacing: 4) {
+                    Image(systemName: source == .live ? "antenna.radiowaves.left.and.right" : "internaldrive")
+                        .font(.caption2)
+                    Text(source.rawValue)
+                        .font(.caption2)
+                }
+                .foregroundColor(.secondary)
+            }
+
             // Last updated
             if let lastUpdated = scheduleService.lastUpdated {
-                Text("Schedule updated: \(lastUpdated.formatted(date: .abbreviated, time: .shortened))")
+                Text("Updated: \(lastUpdated.formatted(date: .abbreviated, time: .shortened))")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -91,6 +112,7 @@ struct NextTrainCard: View {
     let direction: TrainDirection
     let train: UpcomingTrain?
     let stationOrder: Int
+    let hasScheduleData: Bool
 
     var isTerminus: Bool {
         switch direction {
@@ -113,7 +135,15 @@ struct NextTrainCard: View {
 
             Divider()
 
-            if isTerminus {
+            if !hasScheduleData {
+                // No schedule data available
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.title)
+                    .foregroundColor(.orange)
+                Text("No data")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            } else if isTerminus {
                 Text("Terminus")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -155,6 +185,40 @@ struct NextTrainCard: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(16)
+    }
+}
+
+/// Reusable error view for schedule loading issues
+struct ScheduleErrorView: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 50))
+                .foregroundColor(.orange)
+
+            Text("Schedule Unavailable")
+                .font(.headline)
+
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Button(action: onRetry) {
+                Label("Try Again", systemImage: "arrow.clockwise")
+                    .font(.headline)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+        }
+        .padding()
     }
 }
 

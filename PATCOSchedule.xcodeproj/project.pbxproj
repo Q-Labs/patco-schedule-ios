@@ -22,10 +22,20 @@
 		A10000140000000000000014 /* PDFScheduleParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000140000000000000014 /* PDFScheduleParser.swift */; };
 		A10000150000000000000015 /* DataSourceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000150000000000000015 /* DataSourceManager.swift */; };
 		A10000160000000000000016 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000160000000000000016 /* NetworkMonitor.swift */; };
+		A10000170000000000000017 /* PATCOActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000170000000000000017 /* PATCOActivityAttributes.swift */; };
+		A10000180000000000000018 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000180000000000000018 /* LiveActivityManager.swift */; };
 		B10000010000000000000001 /* GTFSModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000001 /* GTFSModelsTests.swift */; };
 		B10000020000000000000002 /* BundledScheduleDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000020000000000000002 /* BundledScheduleDataTests.swift */; };
 		B10000030000000000000003 /* ScheduleServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000030000000000000003 /* ScheduleServiceTests.swift */; };
 		B10000040000000000000004 /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000040000000000000004 /* IntegrationTests.swift */; };
+		B10000050000000000000005 /* LiveActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000050000000000000005 /* LiveActivityTests.swift */; };
+		C10000010000000000000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C20000050000000000000005 /* WidgetKit.framework */; };
+		C10000020000000000000002 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C20000060000000000000006 /* SwiftUI.framework */; };
+		C10000030000000000000003 /* PATCOWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000010000000000000001 /* PATCOWidgetsBundle.swift */; };
+		C10000040000000000000004 /* PATCOLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000020000000000000002 /* PATCOLiveActivity.swift */; };
+		C10000050000000000000005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C20000040000000000000004 /* Assets.xcassets */; };
+		C10000060000000000000006 /* PATCOWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C30000010000000000000001 /* PATCOWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C10000070000000000000007 /* PATCOActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000170000000000000017 /* PATCOActivityAttributes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,7 +46,28 @@
 			remoteGlobalIDString = A60000010000000000000001;
 			remoteInfo = PATCOSchedule;
 		};
+		C40000010000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A80000010000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C60000010000000000000001;
+			remoteInfo = PATCOWidgetsExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C50000010000000000000001 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C10000060000000000000006 /* PATCOWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A30000010000000000000001 /* PATCOSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PATCOSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -56,11 +87,21 @@
 		A20000140000000000000014 /* PDFScheduleParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFScheduleParser.swift; sourceTree = "<group>"; };
 		A20000150000000000000015 /* DataSourceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourceManager.swift; sourceTree = "<group>"; };
 		A20000160000000000000016 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		A20000170000000000000017 /* PATCOActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PATCOActivityAttributes.swift; sourceTree = "<group>"; };
+		A20000180000000000000018 /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
 		B30000010000000000000001 /* PATCOScheduleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PATCOScheduleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000010000000000000001 /* GTFSModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GTFSModelsTests.swift; sourceTree = "<group>"; };
 		B20000020000000000000002 /* BundledScheduleDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledScheduleDataTests.swift; sourceTree = "<group>"; };
 		B20000030000000000000003 /* ScheduleServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleServiceTests.swift; sourceTree = "<group>"; };
 		B20000040000000000000004 /* IntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationTests.swift; sourceTree = "<group>"; };
+		B20000050000000000000005 /* LiveActivityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityTests.swift; sourceTree = "<group>"; };
+		C30000010000000000000001 /* PATCOWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PATCOWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C20000010000000000000001 /* PATCOWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PATCOWidgetsBundle.swift; sourceTree = "<group>"; };
+		C20000020000000000000002 /* PATCOLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PATCOLiveActivity.swift; sourceTree = "<group>"; };
+		C20000030000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C20000040000000000000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C20000050000000000000005 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		C20000060000000000000006 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +119,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C40000020000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C10000020000000000000002 /* SwiftUI.framework in Frameworks */,
+				C10000010000000000000001 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -85,7 +135,9 @@
 			isa = PBXGroup;
 			children = (
 				A50000020000000000000002 /* PATCOSchedule */,
+				C50000020000000000000002 /* PATCOWidgets */,
 				B50000010000000000000001 /* PATCOScheduleTests */,
+				C50000030000000000000003 /* Frameworks */,
 				A50000030000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -110,6 +162,7 @@
 			children = (
 				A30000010000000000000001 /* PATCOSchedule.app */,
 				B30000010000000000000001 /* PATCOScheduleTests.xctest */,
+				C30000010000000000000001 /* PATCOWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -118,6 +171,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000040000000000000004 /* GTFSModels.swift */,
+				A20000170000000000000017 /* PATCOActivityAttributes.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -142,6 +196,7 @@
 				A20000140000000000000014 /* PDFScheduleParser.swift */,
 				A20000150000000000000015 /* DataSourceManager.swift */,
 				A20000160000000000000016 /* NetworkMonitor.swift */,
+				A20000180000000000000018 /* LiveActivityManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -153,8 +208,29 @@
 				B20000020000000000000002 /* BundledScheduleDataTests.swift */,
 				B20000030000000000000003 /* ScheduleServiceTests.swift */,
 				B20000040000000000000004 /* IntegrationTests.swift */,
+				B20000050000000000000005 /* LiveActivityTests.swift */,
 			);
 			path = PATCOScheduleTests;
+			sourceTree = "<group>";
+		};
+		C50000020000000000000002 /* PATCOWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				C20000010000000000000001 /* PATCOWidgetsBundle.swift */,
+				C20000020000000000000002 /* PATCOLiveActivity.swift */,
+				C20000040000000000000004 /* Assets.xcassets */,
+				C20000030000000000000003 /* Info.plist */,
+			);
+			path = PATCOWidgets;
+			sourceTree = "<group>";
+		};
+		C50000030000000000000003 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C20000050000000000000005 /* WidgetKit.framework */,
+				C20000060000000000000006 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -167,10 +243,12 @@
 				A60000020000000000000002 /* Sources */,
 				A40000010000000000000001 /* Frameworks */,
 				A60000030000000000000003 /* Resources */,
+				C50000010000000000000001 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C60000020000000000000002 /* PBXTargetDependency */,
 			);
 			name = PATCOSchedule;
 			productName = PATCOSchedule;
@@ -195,6 +273,23 @@
 			productReference = B30000010000000000000001 /* PATCOScheduleTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		C60000010000000000000001 /* PATCOWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C70000010000000000000001 /* Build configuration list for PBXNativeTarget "PATCOWidgetsExtension" */;
+			buildPhases = (
+				C60000030000000000000003 /* Sources */,
+				C40000020000000000000002 /* Frameworks */,
+				C60000040000000000000004 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PATCOWidgetsExtension;
+			productName = PATCOWidgets;
+			productReference = C30000010000000000000001 /* PATCOWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -211,6 +306,9 @@
 					B60000010000000000000001 = {
 						CreatedOnToolsVersion = 15.0;
 						TestTargetID = A60000010000000000000001;
+					};
+					C60000010000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
@@ -229,6 +327,7 @@
 			targets = (
 				A60000010000000000000001 /* PATCOSchedule */,
 				B60000010000000000000001 /* PATCOScheduleTests */,
+				C60000010000000000000001 /* PATCOWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -247,6 +346,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C60000040000000000000004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C10000050000000000000005 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -270,6 +377,8 @@
 				A10000140000000000000014 /* PDFScheduleParser.swift in Sources */,
 				A10000150000000000000015 /* DataSourceManager.swift in Sources */,
 				A10000160000000000000016 /* NetworkMonitor.swift in Sources */,
+				A10000170000000000000017 /* PATCOActivityAttributes.swift in Sources */,
+				A10000180000000000000018 /* LiveActivityManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,6 +390,17 @@
 				B10000020000000000000002 /* BundledScheduleDataTests.swift in Sources */,
 				B10000030000000000000003 /* ScheduleServiceTests.swift in Sources */,
 				B10000040000000000000004 /* IntegrationTests.swift in Sources */,
+				B10000050000000000000005 /* LiveActivityTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C60000030000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C10000030000000000000003 /* PATCOWidgetsBundle.swift in Sources */,
+				C10000040000000000000004 /* PATCOLiveActivity.swift in Sources */,
+				C10000070000000000000007 /* PATCOActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -291,6 +411,11 @@
 			isa = PBXTargetDependency;
 			target = A60000010000000000000001 /* PATCOSchedule */;
 			targetProxy = B40000010000000000000001 /* PBXContainerItemProxy */;
+		};
+		C60000020000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C60000010000000000000001 /* PATCOWidgetsExtension */;
+			targetProxy = C40000010000000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -417,6 +542,7 @@
 		A90000030000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -441,6 +567,7 @@
 		A90000040000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -498,6 +625,58 @@
 			};
 			name = Release;
 		};
+		C90000010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PATCOWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PATCOWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.patco.schedule.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C90000020000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PATCOWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PATCOWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.patco.schedule.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -524,6 +703,15 @@
 			buildConfigurations = (
 				B90000010000000000000001 /* Debug */,
 				B90000020000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C70000010000000000000001 /* Build configuration list for PBXNativeTarget "PATCOWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C90000010000000000000001 /* Debug */,
+				C90000020000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

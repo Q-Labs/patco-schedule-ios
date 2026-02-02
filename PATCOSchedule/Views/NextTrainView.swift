@@ -1,11 +1,14 @@
 import SwiftUI
+import ActivityKit
 
 struct NextTrainView: View {
     let station: Station
     @EnvironmentObject var scheduleService: ScheduleService
+    @StateObject private var liveActivityManager = LiveActivityManager()
     @State private var eastboundTrain: UpcomingTrain?
     @State private var westboundTrain: UpcomingTrain?
     @State private var refreshTimer: Timer?
+    @State private var showingLiveActivityPicker = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -42,7 +45,10 @@ struct NextTrainView: View {
                         direction: .westbound,
                         train: westboundTrain,
                         stationOrder: station.order,
-                        hasScheduleData: scheduleService.hasScheduleData
+                        hasScheduleData: scheduleService.hasScheduleData,
+                        onTrackTapped: { train in
+                            startLiveActivity(direction: .westbound, train: train)
+                        }
                     )
 
                     // Eastbound (to Lindenwold)
@@ -50,10 +56,23 @@ struct NextTrainView: View {
                         direction: .eastbound,
                         train: eastboundTrain,
                         stationOrder: station.order,
-                        hasScheduleData: scheduleService.hasScheduleData
+                        hasScheduleData: scheduleService.hasScheduleData,
+                        onTrackTapped: { train in
+                            startLiveActivity(direction: .eastbound, train: train)
+                        }
                     )
                 }
                 .padding(.horizontal)
+
+                // Live Activity indicator
+                if liveActivityManager.isActivityRunning {
+                    LiveActivityIndicator {
+                        Task {
+                            await liveActivityManager.endActivity()
+                        }
+                    }
+                    .padding(.horizontal)
+                }
             }
 
             Spacer()
@@ -77,6 +96,7 @@ struct NextTrainView: View {
             }
         }
         .onAppear {
+            liveActivityManager.setScheduleService(scheduleService)
             refreshTrains()
             startRefreshTimer()
         }
@@ -106,6 +126,13 @@ struct NextTrainView: View {
         refreshTimer?.invalidate()
         refreshTimer = nil
     }
+
+    private func startLiveActivity(direction: TrainDirection, train: UpcomingTrain) {
+        guard liveActivityManager.isSupported else {
+            return
+        }
+        liveActivityManager.startActivity(station: station, direction: direction, train: train)
+    }
 }
 
 struct NextTrainCard: View {
@@ -113,6 +140,7 @@ struct NextTrainCard: View {
     let train: UpcomingTrain?
     let stationOrder: Int
     let hasScheduleData: Bool
+    var onTrackTapped: ((UpcomingTrain) -> Void)?
 
     var isTerminus: Bool {
         switch direction {
@@ -164,6 +192,22 @@ struct NextTrainCard: View {
                 Text(train.formattedDepartureTime)
                     .font(.caption)
                     .foregroundColor(.secondary)
+
+                // Track on Lock Screen button
+                if #available(iOS 16.1, *) {
+                    Button {
+                        onTrackTapped?(train)
+                    } label: {
+                        Label("Track", systemImage: "bell.badge")
+                            .font(.caption)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.blue.opacity(0.1))
+                            .foregroundColor(.blue)
+                            .cornerRadius(8)
+                    }
+                    .padding(.top, 4)
+                }
             } else {
                 Text("--")
                     .font(.system(size: 48, weight: .bold, design: .rounded))
@@ -185,6 +229,32 @@ struct NextTrainCard: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(16)
+    }
+}
+
+/// Indicator showing a Live Activity is running
+struct LiveActivityIndicator: View {
+    let onStop: () -> Void
+
+    var body: some View {
+        HStack {
+            Image(systemName: "bell.badge.fill")
+                .foregroundColor(.blue)
+
+            Text("Tracking on Lock Screen")
+                .font(.subheadline)
+
+            Spacer()
+
+            Button("Stop") {
+                onStop()
+            }
+            .font(.subheadline)
+            .foregroundColor(.red)
+        }
+        .padding()
+        .background(Color.blue.opacity(0.1))
+        .cornerRadius(12)
     }
 }
 

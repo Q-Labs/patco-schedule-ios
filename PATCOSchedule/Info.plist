@@ -103,5 +103,9 @@
 	<!-- File Sharing Disabled -->
 	<key>UIFileSharingEnabled</key>
 	<false/>
+
+	<!-- Live Activities Support -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

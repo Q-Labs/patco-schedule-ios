@@ -87,15 +87,23 @@ struct MainScheduleView: View {
 
     var body: some View {
         Group {
-            if !scheduleService.hasScheduleData && scheduleService.isLoading {
-                // Full-screen loading when no data is available yet
-                ScheduleLoadingView()
-            } else if !scheduleService.hasScheduleData, let error = scheduleService.loadState.errorMessage {
-                // Full-screen error when no data and error occurred
-                FullScreenErrorView(message: error) {
-                    Task {
-                        await scheduleService.loadSchedule()
+            if !scheduleService.hasScheduleData {
+                // No data yet - show appropriate state
+                switch scheduleService.loadState {
+                case .loading:
+                    ScheduleLoadingView(retryInfo: nil)
+                case .retrying(let attempt, let maxAttempts):
+                    ScheduleLoadingView(retryInfo: (attempt, maxAttempts))
+                case .waitingForNetwork:
+                    NetworkWaitingView()
+                case .error(let message):
+                    FullScreenErrorView(message: message) {
+                        Task {
+                            await scheduleService.loadSchedule()
+                        }
                     }
+                default:
+                    ScheduleLoadingView(retryInfo: nil)
                 }
             } else {
                 TabView(selection: $selectedTab) {
@@ -145,7 +153,7 @@ struct MainScheduleView: View {
 
 /// Full-screen loading view shown when app is loading initial data
 struct ScheduleLoadingView: View {
-    @State private var animationPhase = 0.0
+    let retryInfo: (attempt: Int, maxAttempts: Int)?
 
     var body: some View {
         VStack(spacing: 24) {
@@ -157,15 +165,25 @@ struct ScheduleLoadingView: View {
                 .foregroundColor(.blue)
                 .symbolEffect(.pulse, options: .repeating)
 
-            Text("Loading Schedule")
-                .font(.title2)
-                .fontWeight(.semibold)
+            if let retry = retryInfo {
+                Text("Retrying...")
+                    .font(.title2)
+                    .fontWeight(.semibold)
 
-            Text("Fetching the latest PATCO train times...")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                Text("Attempt \(retry.attempt) of \(retry.maxAttempts)")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            } else {
+                Text("Loading Schedule")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+
+                Text("Fetching the latest PATCO train times...")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
 
             ProgressView()
                 .scaleEffect(1.2)
@@ -178,6 +196,48 @@ struct ScheduleLoadingView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.bottom, 40)
+        }
+    }
+}
+
+/// View shown when waiting for network connection
+struct NetworkWaitingView: View {
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 60))
+                .foregroundColor(.orange)
+
+            Text("No Internet Connection")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text("Waiting for network to load schedule data.\nThe app will automatically retry when connected.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            ProgressView()
+                .scaleEffect(1.0)
+                .padding(.top, 8)
+
+            Spacer()
+
+            // Help text
+            VStack(spacing: 8) {
+                Text("Tips:")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+
+                Text("• Check your WiFi or cellular connection\n• Move to an area with better signal\n• Disable airplane mode if enabled")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.bottom, 40)
         }
     }
 }

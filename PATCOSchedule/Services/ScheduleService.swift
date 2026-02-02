@@ -4,6 +4,8 @@ import Combine
 enum ScheduleLoadState: Equatable {
     case notLoaded
     case loading
+    case retrying(attempt: Int, maxAttempts: Int)
+    case waitingForNetwork
     case loaded(source: DataSource)
     case error(message: String)
 
@@ -19,8 +21,29 @@ enum ScheduleLoadState: Equatable {
         return false
     }
 
+    var isLoading: Bool {
+        switch self {
+        case .loading, .retrying:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isWaitingForNetwork: Bool {
+        if case .waitingForNetwork = self { return true }
+        return false
+    }
+
     var errorMessage: String? {
         if case .error(let message) = self { return message }
+        return nil
+    }
+
+    var retryInfo: (attempt: Int, maxAttempts: Int)? {
+        if case .retrying(let attempt, let maxAttempts) = self {
+            return (attempt, maxAttempts)
+        }
         return nil
     }
 }
@@ -33,8 +56,11 @@ class ScheduleService: ObservableObject {
     @Published var gtfsLastModified: Date?
     @Published var specialScheduleAlert: String?
 
+    // Network monitoring
+    @Published var networkMonitor = NetworkMonitor()
+
     var isLoading: Bool {
-        loadState == .loading
+        loadState.isLoading
     }
 
     var hasScheduleData: Bool {
@@ -47,12 +73,19 @@ class ScheduleService: ObservableObject {
     private var stopIdMapping: [String: String] = [:]
     private var updateCheckTimer: Timer?
 
+    // Retry configuration
+    private let maxRetryAttempts = 2
+    private var currentRetryAttempt = 0
+
     init() {
         // Immediately load bundled data on init
         loadBundledSchedule()
 
         // Start periodic update checks
         startUpdateCheckTimer()
+
+        // Set up network restoration callback
+        setupNetworkMonitoring()
     }
 
     deinit {
@@ -68,17 +101,22 @@ class ScheduleService: ObservableObject {
             loadBundledSchedule()
         }
 
+        // Reset retry counter for fresh load
+        currentRetryAttempt = 0
+
         // Then try to fetch the best available data
         await fetchBestAvailableData()
     }
 
     /// Forces a refresh from all available sources
     func refreshFromLive() async {
+        currentRetryAttempt = 0
         await fetchBestAvailableData()
     }
 
     /// Check for updates without downloading
     func checkForUpdates() async -> Bool {
+        guard networkMonitor.status.canFetchData else { return false }
         return await dataSourceManager.checkForUpdates()
     }
 
@@ -161,6 +199,26 @@ class ScheduleService: ObservableObject {
         return getUpcomingTrains(for: station, direction: direction, limit: 1).first
     }
 
+    // MARK: - Network Monitoring
+
+    private func setupNetworkMonitoring() {
+        networkMonitor.onConnectionRestored { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+
+                // If we were waiting for network, automatically retry
+                if self.loadState.isWaitingForNetwork {
+                    self.currentRetryAttempt = 0
+                    await self.fetchBestAvailableData()
+                }
+                // If we only have bundled data, try to get live data
+                else if case .loaded(source: .bundled) = self.loadState {
+                    await self.fetchBestAvailableData()
+                }
+            }
+        }
+    }
+
     // MARK: - Private Methods
 
     private func loadBundledSchedule() {
@@ -179,25 +237,46 @@ class ScheduleService: ObservableObject {
     }
 
     private func fetchBestAvailableData() async {
+        // Check network status first
+        if !networkMonitor.status.isConnected {
+            // No network - if we have bundled data, use it; otherwise wait for network
+            if !scheduleData.isLoaded {
+                loadState = .waitingForNetwork
+            }
+            return
+        }
+
+        if !networkMonitor.status.canFetchData {
+            // Poor network - skip fetch if we already have data
+            if scheduleData.isLoaded {
+                return
+            }
+            // Otherwise we need to try anyway
+        }
+
         // Don't show loading state if we already have bundled data
         let hadData = scheduleData.isLoaded
 
         if !hadData {
-            loadState = .loading
+            if currentRetryAttempt > 0 {
+                loadState = .retrying(attempt: currentRetryAttempt, maxAttempts: maxRetryAttempts)
+            } else {
+                loadState = .loading
+            }
         }
 
         // Check for special schedules first
         let specials = await pdfParser.checkForSpecialSchedules()
         if !specials.isEmpty {
-            // Alert about special schedule
             if let activeSpecial = specials.first {
                 specialScheduleAlert = "Special Schedule: \(activeSpecial.name)"
             }
         }
 
+        var fetchSucceeded = false
+
         // Try GTFS first
         do {
-            // First check if there's newer data
             let updateInfo = try await parser.checkGTFSUpdateInfo()
             gtfsLastModified = updateInfo.lastModified
 
@@ -208,40 +287,66 @@ class ScheduleService: ObservableObject {
                 buildStopIdMapping()
                 loadState = .loaded(source: .live)
                 lastUpdated = Date()
-                return
+                fetchSucceeded = true
             }
         } catch {
             print("Failed to fetch live GTFS data: \(error.localizedDescription)")
         }
 
-        // Try PDF fallback
-        do {
-            let pdfData = try await pdfParser.fetchScheduleFromPDF()
+        // Try PDF fallback if GTFS failed
+        if !fetchSucceeded {
+            do {
+                let pdfData = try await pdfParser.fetchScheduleFromPDF()
 
-            if pdfData.isLoaded {
-                scheduleData = pdfData
-                buildStopIdMapping()
-                loadState = .loaded(source: .pdf)
-                lastUpdated = Date()
-                return
+                if pdfData.isLoaded {
+                    scheduleData = pdfData
+                    buildStopIdMapping()
+                    loadState = .loaded(source: .pdf)
+                    lastUpdated = Date()
+                    fetchSucceeded = true
+                }
+            } catch {
+                print("Failed to fetch PDF schedule: \(error.localizedDescription)")
             }
-        } catch {
-            print("Failed to fetch PDF schedule: \(error.localizedDescription)")
         }
 
-        // If we don't have any data, show error
-        if !hadData {
-            loadState = .error(message: "Unable to load schedule data. Please check your internet connection and try again.")
+        // Handle failure
+        if !fetchSucceeded && !hadData {
+            // Automatic retry once
+            if currentRetryAttempt < maxRetryAttempts {
+                currentRetryAttempt += 1
+                loadState = .retrying(attempt: currentRetryAttempt, maxAttempts: maxRetryAttempts)
+
+                // Wait a moment before retrying
+                try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+
+                // Check network again before retry
+                if networkMonitor.status.isConnected {
+                    await fetchBestAvailableData()
+                } else {
+                    loadState = .waitingForNetwork
+                }
+            } else {
+                // All retries exhausted
+                if networkMonitor.status.isConnected {
+                    loadState = .error(message: "Unable to load schedule data after multiple attempts. Please try again later.")
+                } else {
+                    loadState = .waitingForNetwork
+                }
+            }
         }
-        // If we have bundled data, keep using it
     }
 
     private func startUpdateCheckTimer() {
-        // Check for updates every 6 hours
         updateCheckTimer = Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
-                if let hasUpdates = await self?.checkForUpdates(), hasUpdates {
-                    await self?.fetchBestAvailableData()
+                guard let self = self else { return }
+                // Only check if network is good
+                guard self.networkMonitor.status.canFetchData else { return }
+
+                if await self.checkForUpdates() {
+                    self.currentRetryAttempt = 0
+                    await self.fetchBestAvailableData()
                 }
             }
         }
@@ -274,7 +379,6 @@ class ScheduleService: ObservableObject {
             }
         }
 
-        // If no matches found, try fuzzy matching
         if ids.isEmpty {
             for stop in scheduleData.stops {
                 if fuzzyMatch(stop.name, station.name) {
@@ -293,8 +397,6 @@ class ScheduleService: ObservableObject {
     }
 
     private func matchesDirection(trip: GTFSTrip, direction: TrainDirection) -> Bool {
-        // Direction 0 is typically westbound (to Philly), 1 is eastbound (to Lindenwold)
-        // But verify with headsign if available
         if let headsign = trip.headsign?.lowercased() {
             switch direction {
             case .eastbound:
@@ -311,7 +413,6 @@ class ScheduleService: ObservableObject {
             }
         }
 
-        // Fall back to direction_id
         if let directionId = trip.directionId {
             switch direction {
             case .eastbound: return directionId == 1
@@ -319,13 +420,12 @@ class ScheduleService: ObservableObject {
             }
         }
 
-        return true // Include if we can't determine direction
+        return true
     }
 
     private func getActiveServiceIds(for dateString: String, weekday: Int) -> Set<String> {
         var activeIds: Set<String> = []
 
-        // Check calendar.txt for regular service
         for calendar in scheduleData.calendars {
             if calendar.startDate <= dateString && calendar.endDate >= dateString {
                 if calendar.isActiveOn(weekday: weekday) {
@@ -334,14 +434,11 @@ class ScheduleService: ObservableObject {
             }
         }
 
-        // Check calendar_dates.txt for exceptions
         for calendarDate in scheduleData.calendarDates {
             if calendarDate.date == dateString {
                 if calendarDate.exceptionType == 1 {
-                    // Service added for this date
                     activeIds.insert(calendarDate.serviceId)
                 } else if calendarDate.exceptionType == 2 {
-                    // Service removed for this date
                     activeIds.remove(calendarDate.serviceId)
                 }
             }
@@ -361,7 +458,6 @@ class ScheduleService: ObservableObject {
         let calendar = Calendar.current
         var dateComponents = calendar.dateComponents([.year, .month, .day], from: baseDate)
 
-        // GTFS times can be > 24:00 for trips that go past midnight
         if hours >= 24 {
             hours -= 24
             if let currentDay = dateComponents.day {

@@ -6,7 +6,7 @@ final class BundledScheduleDataTests: XCTestCase {
     // MARK: - Station Data Tests
 
     func testBundledStopsCount() {
-        XCTAssertEqual(BundledScheduleData.stops.count, 13)
+        XCTAssertEqual(BundledScheduleData.stops.count, 14)
     }
 
     func testBundledStopsHaveCoordinates() {
@@ -19,7 +19,8 @@ final class BundledScheduleDataTests: XCTestCase {
     func testBundledStopsOrder() {
         let stops = BundledScheduleData.stops
         XCTAssertEqual(stops[0].id, "LINDENWOLD")
-        XCTAssertEqual(stops[12].id, "15-16TH")
+        XCTAssertEqual(stops[9].id, "FRANKLIN")
+        XCTAssertEqual(stops[13].id, "15-16TH")
     }
 
     func testBundledStopsGeographicallyReasonable() {
@@ -34,7 +35,7 @@ final class BundledScheduleDataTests: XCTestCase {
     // MARK: - Travel Times Tests
 
     func testTravelTimesCount() {
-        XCTAssertEqual(BundledScheduleData.travelTimesMinutes.count, 13)
+        XCTAssertEqual(BundledScheduleData.travelTimesMinutes.count, 14)
     }
 
     func testTravelTimesArePositive() {
@@ -167,10 +168,10 @@ final class BundledScheduleDataTests: XCTestCase {
             stopTimesPerTrip[stopTime.tripId, default: []].append(stopTime)
         }
 
-        // Each trip should have 13 stop times (one per station)
+        // Each trip should have 14 stop times (one per station)
         for (tripId, stopTimes) in stopTimesPerTrip {
-            XCTAssertEqual(stopTimes.count, 13,
-                "Trip \(tripId) should have 13 stop times, got \(stopTimes.count)")
+            XCTAssertEqual(stopTimes.count, 14,
+                "Trip \(tripId) should have 14 stop times, got \(stopTimes.count)")
         }
     }
 
@@ -183,12 +184,12 @@ final class BundledScheduleDataTests: XCTestCase {
             stopTimesPerTrip[stopTime.tripId, default: []].append(stopTime)
         }
 
-        // Stop sequences should be 0-12 for each trip
+        // Stop sequences should be 0-13 for each trip
         for (tripId, stopTimes) in stopTimesPerTrip {
             let sequences = stopTimes.map { $0.stopSequence }.sorted()
-            let expected = Array(0..<13)
+            let expected = Array(0..<14)
             XCTAssertEqual(sequences, expected,
-                "Trip \(tripId) should have sequences 0-12")
+                "Trip \(tripId) should have sequences 0-13")
         }
     }
 

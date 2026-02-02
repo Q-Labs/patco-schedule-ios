@@ -16,6 +16,7 @@ struct BundledScheduleData {
         GTFSStop(id: "FERRY", name: "Ferry Avenue", latitude: 39.9266, longitude: -75.0815),
         GTFSStop(id: "BROADWAY", name: "Broadway", latitude: 39.9405, longitude: -75.1056),
         GTFSStop(id: "CITYHALL", name: "City Hall", latitude: 39.9490, longitude: -75.1205),
+        GTFSStop(id: "FRANKLIN", name: "Franklin Square", latitude: 39.9534, longitude: -75.1504),
         GTFSStop(id: "8TH", name: "8th and Market", latitude: 39.9527, longitude: -75.1534),
         GTFSStop(id: "9-10TH", name: "9-10th and Locust", latitude: 39.9479, longitude: -75.1573),
         GTFSStop(id: "12-13TH", name: "12-13th and Locust", latitude: 39.9479, longitude: -75.1637),
@@ -34,7 +35,8 @@ struct BundledScheduleData {
         2,  // Collingswood -> Ferry Avenue
         3,  // Ferry Avenue -> Broadway
         2,  // Broadway -> City Hall
-        4,  // City Hall -> 8th and Market (crosses river)
+        2,  // City Hall -> Franklin Square (crosses river)
+        2,  // Franklin Square -> 8th and Market
         2,  // 8th and Market -> 9-10th and Locust
         1,  // 9-10th -> 12-13th and Locust
         1   // 12-13th -> 15-16th and Locust

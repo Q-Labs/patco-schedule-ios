@@ -163,10 +163,11 @@ struct Station: Identifiable, Hashable {
         Station(id: "FERRY", name: "Ferry Avenue", displayName: "Ferry Ave", order: 6),
         Station(id: "BROADWAY", name: "Broadway", displayName: "Broadway", order: 7),
         Station(id: "CITYHALL", name: "City Hall", displayName: "City Hall", order: 8),
-        Station(id: "8TH", name: "8th and Market", displayName: "8th & Market", order: 9),
-        Station(id: "9-10TH", name: "9-10th and Locust", displayName: "9th-10th & Locust", order: 10),
-        Station(id: "12-13TH", name: "12-13th and Locust", displayName: "12th-13th & Locust", order: 11),
-        Station(id: "15-16TH", name: "15-16th and Locust", displayName: "15th-16th & Locust", order: 12)
+        Station(id: "FRANKLIN", name: "Franklin Square", displayName: "Franklin Square", order: 9),
+        Station(id: "8TH", name: "8th and Market", displayName: "8th & Market", order: 10),
+        Station(id: "9-10TH", name: "9-10th and Locust", displayName: "9th-10th & Locust", order: 11),
+        Station(id: "12-13TH", name: "12-13th and Locust", displayName: "12th-13th & Locust", order: 12),
+        Station(id: "15-16TH", name: "15-16th and Locust", displayName: "15th-16th & Locust", order: 13)
     ]
 
     static func findStation(matching stopName: String) -> Station? {

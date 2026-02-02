@@ -119,7 +119,7 @@ struct NextTrainCard: View {
         case .eastbound:
             return stationOrder == 0 // Lindenwold
         case .westbound:
-            return stationOrder == 12 // 15th-16th
+            return stationOrder == 13 // 15th-16th
         }
     }
 

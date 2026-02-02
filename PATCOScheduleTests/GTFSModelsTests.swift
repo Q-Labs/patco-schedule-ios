@@ -173,15 +173,17 @@ final class GTFSModelsTests: XCTestCase {
     // MARK: - Station Tests
 
     func testStationAllStationsCount() {
-        XCTAssertEqual(Station.allStations.count, 13)
+        XCTAssertEqual(Station.allStations.count, 14)
     }
 
     func testStationOrdering() {
         let stations = Station.allStations
         XCTAssertEqual(stations[0].name, "Lindenwold")
         XCTAssertEqual(stations[0].order, 0)
-        XCTAssertEqual(stations[12].name, "15-16th and Locust")
-        XCTAssertEqual(stations[12].order, 12)
+        XCTAssertEqual(stations[9].name, "Franklin Square")
+        XCTAssertEqual(stations[9].order, 9)
+        XCTAssertEqual(stations[13].name, "15-16th and Locust")
+        XCTAssertEqual(stations[13].order, 13)
     }
 
     func testStationFindMatching() {

@@ -18,7 +18,21 @@
 		A10000090000000000000009 /* StationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000090000000000000009 /* StationDetailView.swift */; };
 		A10000100000000000000010 /* TrainRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000100000000000000010 /* TrainRowView.swift */; };
 		A10000110000000000000011 /* BundledScheduleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000110000000000000011 /* BundledScheduleData.swift */; };
+		B10000010000000000000001 /* GTFSModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000001 /* GTFSModelsTests.swift */; };
+		B10000020000000000000002 /* BundledScheduleDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000020000000000000002 /* BundledScheduleDataTests.swift */; };
+		B10000030000000000000003 /* ScheduleServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000030000000000000003 /* ScheduleServiceTests.swift */; };
+		B10000040000000000000004 /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000040000000000000004 /* IntegrationTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B40000010000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A80000010000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A60000010000000000000001;
+			remoteInfo = PATCOSchedule;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A30000010000000000000001 /* PATCOSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PATCOSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -33,10 +47,22 @@
 		A20000090000000000000009 /* StationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationDetailView.swift; sourceTree = "<group>"; };
 		A20000100000000000000010 /* TrainRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainRowView.swift; sourceTree = "<group>"; };
 		A20000110000000000000011 /* BundledScheduleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledScheduleData.swift; sourceTree = "<group>"; };
+		B30000010000000000000001 /* PATCOScheduleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PATCOScheduleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000010000000000000001 /* GTFSModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GTFSModelsTests.swift; sourceTree = "<group>"; };
+		B20000020000000000000002 /* BundledScheduleDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledScheduleDataTests.swift; sourceTree = "<group>"; };
+		B20000030000000000000003 /* ScheduleServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleServiceTests.swift; sourceTree = "<group>"; };
+		B20000040000000000000004 /* IntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A40000010000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B40000020000000000000002 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -50,6 +76,7 @@
 			isa = PBXGroup;
 			children = (
 				A50000020000000000000002 /* PATCOSchedule */,
+				B50000010000000000000001 /* PATCOScheduleTests */,
 				A50000030000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -71,6 +98,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000010000000000000001 /* PATCOSchedule.app */,
+				B30000010000000000000001 /* PATCOScheduleTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -104,6 +132,17 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
+		B50000010000000000000001 /* PATCOScheduleTests */ = {
+			isa = PBXGroup;
+			children = (
+				B20000010000000000000001 /* GTFSModelsTests.swift */,
+				B20000020000000000000002 /* BundledScheduleDataTests.swift */,
+				B20000030000000000000003 /* ScheduleServiceTests.swift */,
+				B20000040000000000000004 /* IntegrationTests.swift */,
+			);
+			path = PATCOScheduleTests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -124,6 +163,24 @@
 			productReference = A30000010000000000000001 /* PATCOSchedule.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B60000010000000000000001 /* PATCOScheduleTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B70000010000000000000001 /* Build configuration list for PBXNativeTarget "PATCOScheduleTests" */;
+			buildPhases = (
+				B60000020000000000000002 /* Sources */,
+				B40000020000000000000002 /* Frameworks */,
+				B60000030000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B60000040000000000000004 /* PBXTargetDependency */,
+			);
+			name = PATCOScheduleTests;
+			productName = PATCOScheduleTests;
+			productReference = B30000010000000000000001 /* PATCOScheduleTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -136,6 +193,10 @@
 				TargetAttributes = {
 					A60000010000000000000001 = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					B60000010000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = A60000010000000000000001;
 					};
 				};
 			};
@@ -153,6 +214,7 @@
 			projectRoot = "";
 			targets = (
 				A60000010000000000000001 /* PATCOSchedule */,
+				B60000010000000000000001 /* PATCOScheduleTests */,
 			);
 		};
 /* End PBXProject section */
@@ -163,6 +225,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000030000000000000003 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B60000030000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -186,7 +255,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B60000020000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000010000000000000001 /* GTFSModelsTests.swift in Sources */,
+				B10000020000000000000002 /* BundledScheduleDataTests.swift in Sources */,
+				B10000030000000000000003 /* ScheduleServiceTests.swift in Sources */,
+				B10000040000000000000004 /* IntegrationTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B60000040000000000000004 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A60000010000000000000001 /* PATCOSchedule */;
+			targetProxy = B40000010000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A90000010000000000000001 /* Debug */ = {
@@ -364,6 +452,42 @@
 			};
 			name = Release;
 		};
+		B90000010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.patco.schedule.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PATCOSchedule.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PATCOSchedule";
+			};
+			name = Debug;
+		};
+		B90000020000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.patco.schedule.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PATCOSchedule.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PATCOSchedule";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -381,6 +505,15 @@
 			buildConfigurations = (
 				A90000010000000000000001 /* Debug */,
 				A90000020000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B70000010000000000000001 /* Build configuration list for PBXNativeTarget "PATCOScheduleTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B90000010000000000000001 /* Debug */,
+				B90000020000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

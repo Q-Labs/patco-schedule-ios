@@ -10,6 +10,8 @@ enum ScheduleLoadState: Equatable {
     enum DataSource: String {
         case bundled = "Bundled Schedule"
         case live = "Live GTFS Data"
+        case pdf = "PDF Schedule"
+        case special = "Special Schedule"
     }
 
     var isLoaded: Bool {
@@ -28,6 +30,8 @@ class ScheduleService: ObservableObject {
     @Published var scheduleData: ScheduleData = ScheduleData()
     @Published var loadState: ScheduleLoadState = .notLoaded
     @Published var lastUpdated: Date?
+    @Published var gtfsLastModified: Date?
+    @Published var specialScheduleAlert: String?
 
     var isLoading: Bool {
         loadState == .loading
@@ -38,29 +42,60 @@ class ScheduleService: ObservableObject {
     }
 
     private let parser = GTFSParser()
+    private let pdfParser = PDFScheduleParser()
+    private let dataSourceManager = DataSourceManager()
     private var stopIdMapping: [String: String] = [:]
+    private var updateCheckTimer: Timer?
 
     init() {
         // Immediately load bundled data on init
         loadBundledSchedule()
+
+        // Start periodic update checks
+        startUpdateCheckTimer()
+    }
+
+    deinit {
+        updateCheckTimer?.invalidate()
     }
 
     // MARK: - Public Methods
 
-    /// Loads schedule data - uses bundled data immediately, then optionally fetches live updates
+    /// Loads schedule data - uses bundled data immediately, then fetches best available source
     func loadSchedule() async {
         // If we don't have data yet, load bundled first
         if !scheduleData.isLoaded {
             loadBundledSchedule()
         }
 
-        // Then try to fetch live GTFS data in background
-        await fetchLiveGTFSData()
+        // Then try to fetch the best available data
+        await fetchBestAvailableData()
     }
 
-    /// Forces a refresh from live GTFS source
+    /// Forces a refresh from all available sources
     func refreshFromLive() async {
-        await fetchLiveGTFSData()
+        await fetchBestAvailableData()
+    }
+
+    /// Check for updates without downloading
+    func checkForUpdates() async -> Bool {
+        return await dataSourceManager.checkForUpdates()
+    }
+
+    /// Get information about the remote GTFS data
+    func getRemoteGTFSInfo() async -> GTFSParser.GTFSUpdateInfo? {
+        return await dataSourceManager.getGTFSUpdateInfo()
+    }
+
+    /// Get status summary of all data sources
+    func getDataSourceStatus() -> String {
+        return dataSourceManager.getStatusSummary()
+    }
+
+    /// Check for special schedules (holidays, etc.)
+    func checkForSpecialSchedules() async -> [PDFScheduleParser.SpecialScheduleInfo] {
+        await dataSourceManager.checkForSpecialSchedules()
+        return dataSourceManager.specialSchedules
     }
 
     func getUpcomingTrains(for station: Station, direction: TrainDirection, limit: Int = 5) -> [UpcomingTrain] {
@@ -143,7 +178,7 @@ class ScheduleService: ObservableObject {
         }
     }
 
-    private func fetchLiveGTFSData() async {
+    private func fetchBestAvailableData() async {
         // Don't show loading state if we already have bundled data
         let hadData = scheduleData.isLoaded
 
@@ -151,24 +186,64 @@ class ScheduleService: ObservableObject {
             loadState = .loading
         }
 
+        // Check for special schedules first
+        let specials = await pdfParser.checkForSpecialSchedules()
+        if !specials.isEmpty {
+            // Alert about special schedule
+            if let activeSpecial = specials.first {
+                specialScheduleAlert = "Special Schedule: \(activeSpecial.name)"
+            }
+        }
+
+        // Try GTFS first
         do {
+            // First check if there's newer data
+            let updateInfo = try await parser.checkGTFSUpdateInfo()
+            gtfsLastModified = updateInfo.lastModified
+
             let liveData = try await parser.downloadAndParseGTFS()
 
-            // Only use live data if it's valid
             if liveData.isLoaded {
                 scheduleData = liveData
                 buildStopIdMapping()
                 loadState = .loaded(source: .live)
                 lastUpdated = Date()
+                return
             }
         } catch {
-            // If we already have bundled data, just log the error silently
-            // Otherwise show error state
-            if !hadData {
-                loadState = .error(message: "Unable to load schedule data. Please check your internet connection and try again.")
-            }
-            // If we have bundled data, keep using it - don't change the state
             print("Failed to fetch live GTFS data: \(error.localizedDescription)")
+        }
+
+        // Try PDF fallback
+        do {
+            let pdfData = try await pdfParser.fetchScheduleFromPDF()
+
+            if pdfData.isLoaded {
+                scheduleData = pdfData
+                buildStopIdMapping()
+                loadState = .loaded(source: .pdf)
+                lastUpdated = Date()
+                return
+            }
+        } catch {
+            print("Failed to fetch PDF schedule: \(error.localizedDescription)")
+        }
+
+        // If we don't have any data, show error
+        if !hadData {
+            loadState = .error(message: "Unable to load schedule data. Please check your internet connection and try again.")
+        }
+        // If we have bundled data, keep using it
+    }
+
+    private func startUpdateCheckTimer() {
+        // Check for updates every 6 hours
+        updateCheckTimer = Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                if let hasUpdates = await self?.checkForUpdates(), hasUpdates {
+                    await self?.fetchBestAvailableData()
+                }
+            }
         }
     }
 

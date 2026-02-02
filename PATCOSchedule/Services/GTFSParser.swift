@@ -6,9 +6,10 @@ class GTFSParser {
     enum ParserError: Error, LocalizedError {
         case invalidURL
         case downloadFailed(Error)
-        case unzipFailed
+        case unzipFailed(String)
         case parseError(String)
         case fileNotFound(String)
+        case invalidZipFormat
 
         var errorDescription: String? {
             switch self {
@@ -16,17 +17,70 @@ class GTFSParser {
                 return "Invalid GTFS URL"
             case .downloadFailed(let error):
                 return "Failed to download GTFS data: \(error.localizedDescription)"
-            case .unzipFailed:
-                return "Failed to unzip GTFS data"
+            case .unzipFailed(let message):
+                return "Failed to unzip GTFS data: \(message)"
             case .parseError(let message):
                 return "Parse error: \(message)"
             case .fileNotFound(let filename):
                 return "Required file not found: \(filename)"
+            case .invalidZipFormat:
+                return "Invalid ZIP file format"
             }
         }
     }
 
     static let gtfsURL = URL(string: "https://www.ridepatco.org/developers/PortAuthorityTransitCorporation.zip")!
+
+    // MARK: - GTFS Update Info
+
+    struct GTFSUpdateInfo {
+        let lastModified: Date?
+        let etag: String?
+        let contentLength: Int64?
+    }
+
+    /// Check when the GTFS data was last updated without downloading the full file
+    func checkGTFSUpdateInfo() async throws -> GTFSUpdateInfo {
+        var request = URLRequest(url: Self.gtfsURL)
+        request.httpMethod = "HEAD"
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw ParserError.downloadFailed(NSError(domain: "HTTP", code: (response as? HTTPURLResponse)?.statusCode ?? 0))
+        }
+
+        var lastModified: Date?
+        if let lastModifiedString = httpResponse.value(forHTTPHeaderField: "Last-Modified") {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            lastModified = formatter.date(from: lastModifiedString)
+        }
+
+        let etag = httpResponse.value(forHTTPHeaderField: "ETag")
+        let contentLength = Int64(httpResponse.value(forHTTPHeaderField: "Content-Length") ?? "0")
+
+        return GTFSUpdateInfo(lastModified: lastModified, etag: etag, contentLength: contentLength)
+    }
+
+    /// Check if remote GTFS data is newer than our cached version
+    func isRemoteGTFSNewer(than localDate: Date?) async -> Bool {
+        guard let localDate = localDate else { return true }
+
+        do {
+            let updateInfo = try await checkGTFSUpdateInfo()
+            if let remoteDate = updateInfo.lastModified {
+                return remoteDate > localDate
+            }
+        } catch {
+            print("Failed to check GTFS update info: \(error)")
+        }
+
+        // If we can't determine, assume it might be newer
+        return true
+    }
 
     // MARK: - Public Methods
 
@@ -35,13 +89,13 @@ class GTFSParser {
         let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let gtfsDir = cacheDir.appendingPathComponent("gtfs_data")
 
-        // Check if we need to refresh (refresh if older than 24 hours)
-        let shouldRefresh = shouldRefreshCache(at: gtfsDir)
+        // Check if we need to refresh (refresh if older than 24 hours or remote is newer)
+        let shouldRefresh = await shouldRefreshCache(at: gtfsDir)
 
         if shouldRefresh {
             // Download and extract
             let zipData = try await downloadGTFSZip()
-            try await extractZip(data: zipData, to: gtfsDir)
+            try extractZipData(zipData, to: gtfsDir)
         }
 
         // Parse the GTFS files
@@ -90,9 +144,9 @@ class GTFSParser {
         return scheduleData
     }
 
-    // MARK: - Private Methods
+    // MARK: - Cache Management
 
-    private func shouldRefreshCache(at url: URL) -> Bool {
+    private func shouldRefreshCache(at url: URL) async -> Bool {
         let fileManager = FileManager.default
         let stopsFile = url.appendingPathComponent("stops.txt")
 
@@ -104,8 +158,28 @@ class GTFSParser {
 
         // Refresh if older than 24 hours
         let hoursSinceModification = Date().timeIntervalSince(modificationDate) / 3600
-        return hoursSinceModification > 24
+        if hoursSinceModification > 24 {
+            // Check if remote is actually newer before downloading
+            return await isRemoteGTFSNewer(than: modificationDate)
+        }
+
+        return false
     }
+
+    func getCachedGTFSDate() -> Date? {
+        let fileManager = FileManager.default
+        let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let stopsFile = cacheDir.appendingPathComponent("gtfs_data/stops.txt")
+
+        guard let attributes = try? fileManager.attributesOfItem(atPath: stopsFile.path),
+              let modificationDate = attributes[.modificationDate] as? Date else {
+            return nil
+        }
+
+        return modificationDate
+    }
+
+    // MARK: - Download
 
     private func downloadGTFSZip() async throws -> Data {
         let (data, response) = try await URLSession.shared.data(from: Self.gtfsURL)
@@ -118,7 +192,10 @@ class GTFSParser {
         return data
     }
 
-    private func extractZip(data: Data, to destination: URL) async throws {
+    // MARK: - iOS-Compatible ZIP Extraction
+
+    /// Extract ZIP data using pure Swift (iOS compatible)
+    private func extractZipData(_ data: Data, to destination: URL) throws {
         let fileManager = FileManager.default
 
         // Remove existing directory
@@ -129,34 +206,124 @@ class GTFSParser {
         // Create directory
         try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
 
-        // Write zip file temporarily
-        let tempZipURL = destination.appendingPathComponent("temp.zip")
-        try data.write(to: tempZipURL)
-
-        // Use Process to unzip (iOS doesn't have built-in zip support, so we'll parse manually)
-        // For iOS, we'll use a simple zip extraction
-        try await unzipFile(at: tempZipURL, to: destination)
-
-        // Clean up temp file
-        try? fileManager.removeItem(at: tempZipURL)
+        // Parse ZIP file structure and extract
+        try parseAndExtractZip(data: data, to: destination)
     }
 
-    private func unzipFile(at sourceURL: URL, to destinationURL: URL) async throws {
-        // Simple zip extraction using FileHandle and manual parsing
-        // For a production app, you'd use a proper zip library like ZIPFoundation
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
-        process.arguments = ["-o", sourceURL.path, "-d", destinationURL.path]
-        process.standardOutput = nil
-        process.standardError = nil
+    /// Parse ZIP file format and extract files
+    /// ZIP format: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
+    private func parseAndExtractZip(data: Data, to destination: URL) throws {
+        var offset = 0
+        let fileManager = FileManager.default
 
-        try process.run()
-        process.waitUntilExit()
+        while offset < data.count - 4 {
+            // Check for local file header signature (0x04034b50)
+            let signature = data.subdata(in: offset..<offset+4).withUnsafeBytes { $0.load(as: UInt32.self) }
 
-        if process.terminationStatus != 0 {
-            throw ParserError.unzipFailed
+            if signature == 0x04034b50 {
+                // Local file header
+                guard offset + 30 <= data.count else {
+                    throw ParserError.invalidZipFormat
+                }
+
+                let compressionMethod = data.subdata(in: offset+8..<offset+10).withUnsafeBytes { $0.load(as: UInt16.self) }
+                let compressedSize = Int(data.subdata(in: offset+18..<offset+22).withUnsafeBytes { $0.load(as: UInt32.self) })
+                let uncompressedSize = Int(data.subdata(in: offset+22..<offset+26).withUnsafeBytes { $0.load(as: UInt32.self) })
+                let fileNameLength = Int(data.subdata(in: offset+26..<offset+28).withUnsafeBytes { $0.load(as: UInt16.self) })
+                let extraFieldLength = Int(data.subdata(in: offset+28..<offset+30).withUnsafeBytes { $0.load(as: UInt16.self) })
+
+                let fileNameStart = offset + 30
+                let fileNameEnd = fileNameStart + fileNameLength
+
+                guard fileNameEnd <= data.count else {
+                    throw ParserError.invalidZipFormat
+                }
+
+                let fileNameData = data.subdata(in: fileNameStart..<fileNameEnd)
+                guard let fileName = String(data: fileNameData, encoding: .utf8) else {
+                    offset = fileNameEnd + extraFieldLength + compressedSize
+                    continue
+                }
+
+                let dataStart = fileNameEnd + extraFieldLength
+                let dataEnd = dataStart + compressedSize
+
+                guard dataEnd <= data.count else {
+                    throw ParserError.invalidZipFormat
+                }
+
+                // Skip directories and hidden files
+                if !fileName.hasSuffix("/") && !fileName.hasPrefix("__MACOSX") && !fileName.hasPrefix(".") {
+                    let compressedData = data.subdata(in: dataStart..<dataEnd)
+                    var extractedData: Data
+
+                    if compressionMethod == 0 {
+                        // Stored (no compression)
+                        extractedData = compressedData
+                    } else if compressionMethod == 8 {
+                        // Deflate compression
+                        extractedData = try decompressDeflate(compressedData, expectedSize: uncompressedSize)
+                    } else {
+                        print("Unsupported compression method \(compressionMethod) for \(fileName)")
+                        offset = dataEnd
+                        continue
+                    }
+
+                    // Get just the filename without any directory path in the zip
+                    let destFileName = (fileName as NSString).lastPathComponent
+                    let fileURL = destination.appendingPathComponent(destFileName)
+
+                    // Create parent directory if needed
+                    let parentDir = fileURL.deletingLastPathComponent()
+                    if !fileManager.fileExists(atPath: parentDir.path) {
+                        try fileManager.createDirectory(at: parentDir, withIntermediateDirectories: true)
+                    }
+
+                    try extractedData.write(to: fileURL)
+                }
+
+                offset = dataEnd
+            } else if signature == 0x02014b50 {
+                // Central directory header - we're done with file entries
+                break
+            } else if signature == 0x06054b50 {
+                // End of central directory - we're done
+                break
+            } else {
+                // Unknown signature, try to skip ahead
+                offset += 1
+            }
         }
     }
+
+    /// Decompress deflate-compressed data using Apple's Compression framework
+    private func decompressDeflate(_ data: Data, expectedSize: Int) throws -> Data {
+        // Use a reasonable buffer size
+        let bufferSize = max(expectedSize, 65536)
+        var decompressedData = Data(count: bufferSize)
+
+        let decompressedSize = decompressedData.withUnsafeMutableBytes { destBuffer in
+            data.withUnsafeBytes { srcBuffer in
+                compression_decode_buffer(
+                    destBuffer.bindMemory(to: UInt8.self).baseAddress!,
+                    bufferSize,
+                    srcBuffer.bindMemory(to: UInt8.self).baseAddress!,
+                    data.count,
+                    nil,
+                    COMPRESSION_ZLIB
+                )
+            }
+        }
+
+        guard decompressedSize > 0 else {
+            throw ParserError.unzipFailed("Decompression failed")
+        }
+
+        decompressedData.count = decompressedSize
+        return decompressedData
+    }
+
+    // MARK: - CSV Parsing
 
     private func parseCSV<T: Decodable>(at url: URL, as type: T.Type) throws -> [T] {
         let content = try String(contentsOf: url, encoding: .utf8)

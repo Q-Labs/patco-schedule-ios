@@ -86,27 +86,41 @@ struct MainScheduleView: View {
     @State private var selectedTab = 0
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            // Quick View Tab
-            NextTrainView(station: station)
-                .tabItem {
-                    Label("Next Train", systemImage: "clock.fill")
+        Group {
+            if !scheduleService.hasScheduleData && scheduleService.isLoading {
+                // Full-screen loading when no data is available yet
+                ScheduleLoadingView()
+            } else if !scheduleService.hasScheduleData, let error = scheduleService.loadState.errorMessage {
+                // Full-screen error when no data and error occurred
+                FullScreenErrorView(message: error) {
+                    Task {
+                        await scheduleService.loadSchedule()
+                    }
                 }
-                .tag(0)
+            } else {
+                TabView(selection: $selectedTab) {
+                    // Quick View Tab
+                    NextTrainView(station: station)
+                        .tabItem {
+                            Label("Next Train", systemImage: "clock.fill")
+                        }
+                        .tag(0)
 
-            // Full Schedule Tab
-            StationDetailView(station: station)
-                .tabItem {
-                    Label("Schedule", systemImage: "list.bullet")
-                }
-                .tag(1)
+                    // Full Schedule Tab
+                    StationDetailView(station: station)
+                        .tabItem {
+                            Label("Schedule", systemImage: "list.bullet")
+                        }
+                        .tag(1)
 
-            // All Stations Tab
-            AllStationsView()
-                .tabItem {
-                    Label("All Stations", systemImage: "map")
+                    // All Stations Tab
+                    AllStationsView()
+                        .tabItem {
+                            Label("All Stations", systemImage: "map")
+                        }
+                        .tag(2)
                 }
-                .tag(2)
+            }
         }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -120,10 +134,102 @@ struct MainScheduleView: View {
             }
 
             ToolbarItem(placement: .topBarTrailing) {
-                if scheduleService.isLoading {
+                if scheduleService.isLoading && scheduleService.hasScheduleData {
+                    // Only show small spinner when refreshing (already have data)
                     ProgressView()
                 }
             }
+        }
+    }
+}
+
+/// Full-screen loading view shown when app is loading initial data
+struct ScheduleLoadingView: View {
+    @State private var animationPhase = 0.0
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            // Animated train icon
+            Image(systemName: "tram.fill")
+                .font(.system(size: 60))
+                .foregroundColor(.blue)
+                .symbolEffect(.pulse, options: .repeating)
+
+            Text("Loading Schedule")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text("Fetching the latest PATCO train times...")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            ProgressView()
+                .scaleEffect(1.2)
+                .padding(.top, 8)
+
+            Spacer()
+
+            // Subtle footer
+            Text("This may take a moment on first launch")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.bottom, 40)
+        }
+    }
+}
+
+/// Full-screen error view when no data is available
+struct FullScreenErrorView: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 60))
+                .foregroundColor(.orange)
+
+            Text("Unable to Load Schedule")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            Button(action: onRetry) {
+                Label("Try Again", systemImage: "arrow.clockwise")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 40)
+
+            Spacer()
+
+            // Help text
+            VStack(spacing: 8) {
+                Text("Troubleshooting:")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+
+                Text("• Check your internet connection\n• Try again in a few moments\n• Restart the app if the issue persists")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.bottom, 40)
         }
     }
 }

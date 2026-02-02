@@ -161,8 +161,8 @@ patco-schedule-ios/
 │       ├── BundledScheduleData.swift # Offline schedule data
 │       ├── DataSourceManager.swift   # Coordinates data sources
 │       ├── NetworkMonitor.swift      # Tracks internet connection
-│       └── LiveActivityManager.swift # Manages Live Activities
-├── PATCOWidgets/               # Widget Extension for Live Activities
+│       └── LiveActivityManager.swift # Manages Live Activity
+├── PATCOWidgets/               # Widget Extension for Live Activity
 │   ├── PATCOWidgetsBundle.swift     # Widget extension entry point
 │   ├── PATCOLiveActivity.swift      # Lock Screen and Dynamic Island UI
 │   └── Info.plist                   # Widget extension configuration
@@ -170,7 +170,7 @@ patco-schedule-ios/
     ├── GTFSModelsTests.swift
     ├── BundledScheduleDataTests.swift
     ├── ScheduleServiceTests.swift
-    ├── LiveActivityTests.swift       # Tests for Live Activities
+    ├── LiveActivityTests.swift       # Tests for Live Activity
     └── IntegrationTests.swift
 ```
 
@@ -428,15 +428,15 @@ The bundled schedule is in `BundledScheduleData.swift`. You can:
 
 ---
 
-## Live Activities (Lock Screen & Dynamic Island)
+## iOS Live Activity (Lock Screen & Dynamic Island)
 
-The app supports iOS Live Activities, which show a countdown timer on your Lock Screen and in the Dynamic Island (on supported devices) so you can track your train without opening the app.
+The app supports iOS Live Activity, which shows a countdown timer on your Lock Screen and in the Dynamic Island (on supported devices) so you can track your train without opening the app.
 
-### What Are Live Activities?
+### What Is iOS Live Activity?
 
-Live Activities are persistent notifications that appear on your Lock Screen and Dynamic Island. Unlike regular notifications that disappear, Live Activities stay visible and update in real-time until you dismiss them or the train departs.
+iOS Live Activity is a persistent notification that appears on your Lock Screen and Dynamic Island. Unlike regular notifications that disappear, a Live Activity stays visible and updates in real-time until you dismiss it or the train departs.
 
-### How to Use Live Activities
+### How to Use Live Activity
 
 1. **Select a station** and view upcoming trains
 2. **Tap the "Track" button** on any train card
@@ -448,15 +448,15 @@ Live Activities are persistent notifications that appear on your Lock Screen and
 5. **View in Dynamic Island** - On iPhone 14 Pro and later, see the countdown at the top of your screen
 6. **Stop tracking** - Tap the "Stop Tracking" button in the app, or the Live Activity automatically ends when the train departs
 
-### Requirements for Live Activities
+### Requirements for Live Activity
 
-- **iOS 16.1 or later** (Live Activities were introduced in iOS 16.1)
-- **iPhone** (Live Activities are not available on iPad)
+- **iOS 16.1 or later** (Live Activity was introduced in iOS 16.1)
+- **iPhone** (Live Activity is not available on iPad)
 - **Dynamic Island** requires iPhone 14 Pro or later
 
-### Architecture of Live Activities
+### Architecture of Live Activity
 
-Live Activities use Apple's **ActivityKit** framework and require a **Widget Extension**:
+iOS Live Activity uses Apple's **ActivityKit** framework and requires a **Widget Extension**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -471,12 +471,12 @@ Live Activities use Apple's **ActivityKit** framework and require a **Widget Ext
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Key Files for Live Activities
+### Key Files for Live Activity
 
 | File | Purpose |
 |------|---------|
 | `PATCOActivityAttributes.swift` | Defines the data structure shared between app and widget |
-| `LiveActivityManager.swift` | Starts, updates, and stops Live Activities |
+| `LiveActivityManager.swift` | Starts, updates, and stops Live Activity |
 | `PATCOWidgets/PATCOLiveActivity.swift` | The visual UI shown on Lock Screen and Dynamic Island |
 | `PATCOWidgets/PATCOWidgetsBundle.swift` | Widget extension entry point |
 
@@ -504,9 +504,9 @@ Lock Screen/Dynamic Island updates with new countdown
 Train departs → LiveActivityManager.stopActivity()
 ```
 
-### Testing Live Activities
+### Testing Live Activity
 
-**Important:** Live Activities cannot be tested in the Simulator. You must test on a physical device.
+**Important:** Live Activity cannot be tested in the Simulator. You must test on a physical device.
 
 1. Build and run on a physical iPhone
 2. Navigate to a station with upcoming trains
@@ -515,15 +515,15 @@ Train departs → LiveActivityManager.stopActivity()
 5. Wait 30+ seconds and verify the countdown updates
 6. Unlock and tap "Stop Tracking" to end
 
-### Troubleshooting Live Activities
+### Troubleshooting Live Activity
 
 **"Track" button doesn't appear:**
 - Ensure you're running iOS 16.1 or later
 - Check that `NSSupportsLiveActivities` is set to `true` in Info.plist
 
 **Live Activity doesn't start:**
-- Check Settings → PATCO Schedule → Live Activities is enabled
-- Some devices may have Live Activities disabled by default
+- Check Settings → PATCO Schedule → Live Activity is enabled
+- Some devices may have Live Activity disabled by default
 
 **Live Activity doesn't update:**
 - The app must remain installed (not deleted)

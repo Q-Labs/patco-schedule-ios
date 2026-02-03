@@ -27,32 +27,83 @@ final class LiveActivityTests: XCTestCase {
     func testContentStateCreation() {
         let state = PATCOActivityAttributes.ContentState(
             minutesUntilDeparture: 12,
+            secondsUntilDeparture: 0,
             departureTimeString: "10:42 AM",
             isArrivingSoon: false,
+            showSeconds: false,
+            hasDeparted: false,
             lastUpdated: Date()
         )
 
         XCTAssertEqual(state.minutesUntilDeparture, 12)
         XCTAssertEqual(state.departureTimeString, "10:42 AM")
         XCTAssertFalse(state.isArrivingSoon)
+        XCTAssertFalse(state.showSeconds)
+        XCTAssertFalse(state.hasDeparted)
     }
 
     func testContentStateArrivingSoon() {
         let stateNotSoon = PATCOActivityAttributes.ContentState(
             minutesUntilDeparture: 10,
+            secondsUntilDeparture: 0,
             departureTimeString: "10:40 AM",
             isArrivingSoon: false,
+            showSeconds: false,
+            hasDeparted: false,
             lastUpdated: Date()
         )
         XCTAssertFalse(stateNotSoon.isArrivingSoon)
 
         let stateSoon = PATCOActivityAttributes.ContentState(
             minutesUntilDeparture: 3,
+            secondsUntilDeparture: 0,
             departureTimeString: "10:33 AM",
             isArrivingSoon: true,
+            showSeconds: false,
+            hasDeparted: false,
             lastUpdated: Date()
         )
         XCTAssertTrue(stateSoon.isArrivingSoon)
+    }
+
+    func testContentStateShowSeconds() {
+        // Under 1 minute - should show seconds
+        let stateUnder1Min = PATCOActivityAttributes.ContentState(
+            minutesUntilDeparture: 0,
+            secondsUntilDeparture: 45,
+            departureTimeString: "10:30 AM",
+            isArrivingSoon: true,
+            showSeconds: true,
+            hasDeparted: false,
+            lastUpdated: Date()
+        )
+        XCTAssertTrue(stateUnder1Min.showSeconds)
+        XCTAssertEqual(stateUnder1Min.secondsUntilDeparture, 45)
+
+        // Over 1 minute - should not show seconds
+        let stateOver1Min = PATCOActivityAttributes.ContentState(
+            minutesUntilDeparture: 5,
+            secondsUntilDeparture: 0,
+            departureTimeString: "10:35 AM",
+            isArrivingSoon: true,
+            showSeconds: false,
+            hasDeparted: false,
+            lastUpdated: Date()
+        )
+        XCTAssertFalse(stateOver1Min.showSeconds)
+    }
+
+    func testContentStateHasDeparted() {
+        let departedState = PATCOActivityAttributes.ContentState(
+            minutesUntilDeparture: 0,
+            secondsUntilDeparture: 0,
+            departureTimeString: "10:30 AM",
+            isArrivingSoon: false,
+            showSeconds: false,
+            hasDeparted: true,
+            lastUpdated: Date()
+        )
+        XCTAssertTrue(departedState.hasDeparted)
     }
 
     func testContentStateFromUpcomingTrain() {
@@ -71,6 +122,8 @@ final class LiveActivityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(state.minutesUntilDeparture, 11)
         XCTAssertLessThanOrEqual(state.minutesUntilDeparture, 13)
         XCTAssertFalse(state.isArrivingSoon)
+        XCTAssertFalse(state.showSeconds)
+        XCTAssertFalse(state.hasDeparted)
         XCTAssertFalse(state.departureTimeString.isEmpty)
     }
 
@@ -88,6 +141,25 @@ final class LiveActivityTests: XCTestCase {
 
         XCTAssertLessThanOrEqual(state.minutesUntilDeparture, 5)
         XCTAssertTrue(state.isArrivingSoon)
+        XCTAssertFalse(state.showSeconds) // Still over 1 minute
+    }
+
+    func testContentStateFromUpcomingTrainUnder1Minute() {
+        let departureTime = Date().addingTimeInterval(45) // 45 seconds from now
+        let train = UpcomingTrain(
+            departureTime: departureTime,
+            arrivalTimeString: "10:30:00",
+            headsign: "Lindenwold",
+            direction: .eastbound,
+            tripId: "WEEKDAY_EB_15"
+        )
+
+        let state = PATCOActivityAttributes.ContentState.from(train: train)
+
+        XCTAssertEqual(state.minutesUntilDeparture, 0)
+        XCTAssertTrue(state.showSeconds)
+        XCTAssertGreaterThan(state.secondsUntilDeparture, 40)
+        XCTAssertLessThanOrEqual(state.secondsUntilDeparture, 46)
     }
 
     // MARK: - ContentState Codable Tests
@@ -95,8 +167,11 @@ final class LiveActivityTests: XCTestCase {
     func testContentStateEncodingDecoding() throws {
         let originalState = PATCOActivityAttributes.ContentState(
             minutesUntilDeparture: 8,
+            secondsUntilDeparture: 30,
             departureTimeString: "10:38 AM",
             isArrivingSoon: false,
+            showSeconds: false,
+            hasDeparted: false,
             lastUpdated: Date()
         )
 
@@ -107,25 +182,35 @@ final class LiveActivityTests: XCTestCase {
         let decodedState = try decoder.decode(PATCOActivityAttributes.ContentState.self, from: data)
 
         XCTAssertEqual(decodedState.minutesUntilDeparture, originalState.minutesUntilDeparture)
+        XCTAssertEqual(decodedState.secondsUntilDeparture, originalState.secondsUntilDeparture)
         XCTAssertEqual(decodedState.departureTimeString, originalState.departureTimeString)
         XCTAssertEqual(decodedState.isArrivingSoon, originalState.isArrivingSoon)
+        XCTAssertEqual(decodedState.showSeconds, originalState.showSeconds)
+        XCTAssertEqual(decodedState.hasDeparted, originalState.hasDeparted)
     }
 
     // MARK: - ContentState Hashable Tests
 
     func testContentStateHashable() {
+        let date = Date()
         let state1 = PATCOActivityAttributes.ContentState(
             minutesUntilDeparture: 12,
+            secondsUntilDeparture: 0,
             departureTimeString: "10:42 AM",
             isArrivingSoon: false,
-            lastUpdated: Date()
+            showSeconds: false,
+            hasDeparted: false,
+            lastUpdated: date
         )
 
         let state2 = PATCOActivityAttributes.ContentState(
             minutesUntilDeparture: 12,
+            secondsUntilDeparture: 0,
             departureTimeString: "10:42 AM",
             isArrivingSoon: false,
-            lastUpdated: state1.lastUpdated
+            showSeconds: false,
+            hasDeparted: false,
+            lastUpdated: date
         )
 
         XCTAssertEqual(state1, state2)
@@ -135,15 +220,21 @@ final class LiveActivityTests: XCTestCase {
     func testContentStateDifferentValues() {
         let state1 = PATCOActivityAttributes.ContentState(
             minutesUntilDeparture: 12,
+            secondsUntilDeparture: 0,
             departureTimeString: "10:42 AM",
             isArrivingSoon: false,
+            showSeconds: false,
+            hasDeparted: false,
             lastUpdated: Date()
         )
 
         let state2 = PATCOActivityAttributes.ContentState(
             minutesUntilDeparture: 5,
+            secondsUntilDeparture: 0,
             departureTimeString: "10:35 AM",
             isArrivingSoon: true,
+            showSeconds: false,
+            hasDeparted: false,
             lastUpdated: Date()
         )
 

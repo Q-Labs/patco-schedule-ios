@@ -10,11 +10,24 @@ extension PATCOActivityAttributes.ContentState {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
 
+        let now = Date()
+        let timeInterval = train.departureTime.timeIntervalSince(now)
+        let totalSeconds = max(0, Int(timeInterval))
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+
+        // Show seconds when under 1 minute
+        let showSeconds = minutes == 0 && totalSeconds > 0
+        let hasDeparted = totalSeconds <= 0
+
         return Self(
-            minutesUntilDeparture: train.minutesUntilDeparture,
+            minutesUntilDeparture: minutes,
+            secondsUntilDeparture: showSeconds ? totalSeconds : seconds,
             departureTimeString: formatter.string(from: train.departureTime),
-            isArrivingSoon: train.minutesUntilDeparture <= 5,
-            lastUpdated: Date()
+            isArrivingSoon: minutes <= 5,
+            showSeconds: showSeconds,
+            hasDeparted: hasDeparted,
+            lastUpdated: now
         )
     }
 }
@@ -46,6 +59,9 @@ class LiveActivityManager: ObservableObject {
 
     /// Current direction being tracked
     private var trackedDirection: TrainDirection?
+
+    /// Tracked departure time for the current train
+    private var trackedDepartureTime: Date?
 
     init() {
         checkSupport()
@@ -105,9 +121,10 @@ class LiveActivityManager: ObservableObject {
             currentActivity = activity
             trackedStation = station
             trackedDirection = direction
+            trackedDepartureTime = train.departureTime
 
             // Start timer to update the activity
-            startUpdateTimer()
+            startUpdateTimer(for: train)
 
             print("Started Live Activity: \(activity.id)")
 
@@ -121,42 +138,44 @@ class LiveActivityManager: ObservableObject {
     /// Update the Live Activity with new countdown
     func updateActivity() async {
         guard let activity = currentActivity,
-              let station = trackedStation,
-              let direction = trackedDirection,
-              let scheduleService = scheduleService else {
+              let trackedDepartureTime = trackedDepartureTime else {
             return
         }
 
-        // Get the latest train info
-        guard let nextTrain = scheduleService.getNextTrain(for: station, direction: direction) else {
-            // No more trains - end the activity
+        let now = Date()
+        let timeInterval = trackedDepartureTime.timeIntervalSince(now)
+
+        // Check if train has departed
+        if timeInterval <= 0 {
+            // Train has departed - dismiss the activity
             await endActivity()
             return
         }
 
-        // Check if the train has departed
-        if nextTrain.departureTime <= Date() {
-            // Train departed - check for next train
-            let upcomingTrains = scheduleService.getUpcomingTrains(for: station, direction: direction, limit: 2)
-            if upcomingTrains.count > 1 {
-                // Show next train
-                let newState = PATCOActivityAttributes.ContentState.from(train: upcomingTrains[1])
-                await activity.update(
-                    ActivityContent(state: newState, staleDate: upcomingTrains[1].departureTime)
-                )
-            } else {
-                // No more trains
-                await endActivity()
-            }
-            return
-        }
+        // Create updated state based on current time
+        let totalSeconds = Int(timeInterval)
+        let minutes = totalSeconds / 60
+        let showSeconds = minutes == 0
 
-        // Update with current countdown
-        let newState = PATCOActivityAttributes.ContentState.from(train: nextTrain)
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+
+        let newState = PATCOActivityAttributes.ContentState(
+            minutesUntilDeparture: minutes,
+            secondsUntilDeparture: totalSeconds,
+            departureTimeString: formatter.string(from: trackedDepartureTime),
+            isArrivingSoon: minutes <= 5,
+            showSeconds: showSeconds,
+            hasDeparted: false,
+            lastUpdated: now
+        )
 
         await activity.update(
-            ActivityContent(state: newState, staleDate: nextTrain.departureTime)
+            ActivityContent(state: newState, staleDate: trackedDepartureTime)
         )
+
+        // Adjust timer frequency based on time remaining
+        adjustTimerIfNeeded(secondsRemaining: totalSeconds)
     }
 
     // MARK: - End Activity
@@ -168,11 +187,14 @@ class LiveActivityManager: ObservableObject {
         updateTimer?.invalidate()
         updateTimer = nil
 
-        // Create final state
+        // Create final state showing departed
         let finalState = PATCOActivityAttributes.ContentState(
             minutesUntilDeparture: 0,
+            secondsUntilDeparture: 0,
             departureTimeString: "--",
             isArrivingSoon: false,
+            showSeconds: false,
+            hasDeparted: true,
             lastUpdated: Date()
         )
 
@@ -184,19 +206,37 @@ class LiveActivityManager: ObservableObject {
         currentActivity = nil
         trackedStation = nil
         trackedDirection = nil
+        trackedDepartureTime = nil
 
         print("Ended Live Activity")
     }
 
     // MARK: - Timer Management
 
-    private func startUpdateTimer() {
+    private func startUpdateTimer(for train: UpcomingTrain) {
         updateTimer?.invalidate()
 
-        // Update every 30 seconds to match the main app
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+        let timeRemaining = train.departureTime.timeIntervalSince(Date())
+        let interval: TimeInterval = timeRemaining <= 60 ? 1 : 30
+
+        updateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 await self?.updateActivity()
+            }
+        }
+    }
+
+    private func adjustTimerIfNeeded(secondsRemaining: Int) {
+        // Switch to 1-second updates when under 1 minute
+        if secondsRemaining <= 60 && secondsRemaining > 0 {
+            // Check if we need to speed up the timer
+            if let timer = updateTimer, timer.timeInterval > 1 {
+                updateTimer?.invalidate()
+                updateTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        await self?.updateActivity()
+                    }
+                }
             }
         }
     }
@@ -208,8 +248,11 @@ class LiveActivityManager: ObservableObject {
         for activity in Activity<PATCOActivityAttributes>.activities {
             let finalState = PATCOActivityAttributes.ContentState(
                 minutesUntilDeparture: 0,
+                secondsUntilDeparture: 0,
                 departureTimeString: "--",
                 isArrivingSoon: false,
+                showSeconds: false,
+                hasDeparted: true,
                 lastUpdated: Date()
             )
 

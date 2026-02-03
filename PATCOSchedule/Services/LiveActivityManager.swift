@@ -62,11 +62,7 @@ class LiveActivityManager: ObservableObject {
     }
 
     private func checkSupport() {
-        if #available(iOS 16.1, *) {
-            isSupported = ActivityAuthorizationInfo().areActivitiesEnabled
-        } else {
-            isSupported = false
-        }
+        isSupported = ActivityAuthorizationInfo().areActivitiesEnabled
     }
 
     // MARK: - Start Activity

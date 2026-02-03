@@ -2,6 +2,7 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
+@available(iOS 16.1, *)
 struct PATCOLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PATCOActivityAttributes.self) { context in
@@ -79,6 +80,7 @@ struct PATCOLiveActivity: Widget {
 
 // MARK: - Lock Screen View
 
+@available(iOS 16.1, *)
 struct LockScreenView: View {
     let context: ActivityViewContext<PATCOActivityAttributes>
 

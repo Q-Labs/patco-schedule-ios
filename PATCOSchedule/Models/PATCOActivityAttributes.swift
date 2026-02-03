@@ -2,52 +2,55 @@ import Foundation
 import ActivityKit
 
 /// Defines the data shown in the PATCO Live Activity
-struct PATCOActivityAttributes: ActivityAttributes {
+@available(iOS 16.1, *)
+public struct PATCOActivityAttributes: ActivityAttributes {
 
-    /// Static data that doesn't change during the activity
-    public struct ContentState: Codable, Hashable {
-        /// Minutes until departure (updates as time passes)
-        var minutesUntilDeparture: Int
-
-        /// Formatted departure time (e.g., "10:42 AM")
-        var departureTimeString: String
-
-        /// Whether the train is arriving soon (< 5 minutes)
-        var isArrivingSoon: Bool
-
-        /// Timestamp of last update
-        var lastUpdated: Date
-    }
+    /// Dynamic data that updates during the activity
+    public typealias ContentState = PATCOActivityContentState
 
     /// Station name
-    var stationName: String
+    public var stationName: String
 
     /// Direction of travel
-    var direction: String
+    public var direction: String
 
     /// Destination (e.g., "15th-16th & Locust" or "Lindenwold")
-    var destination: String
+    public var destination: String
 
     /// Trip ID for tracking
-    var tripId: String
+    public var tripId: String
 
     /// Scheduled departure time
-    var scheduledDeparture: Date
+    public var scheduledDeparture: Date
+
+    public init(stationName: String, direction: String, destination: String, tripId: String, scheduledDeparture: Date) {
+        self.stationName = stationName
+        self.direction = direction
+        self.destination = destination
+        self.tripId = tripId
+        self.scheduledDeparture = scheduledDeparture
+    }
 }
 
-// MARK: - Helper Extensions
+/// Content state for the PATCO Live Activity (dynamic data that updates)
+@available(iOS 16.1, *)
+public struct PATCOActivityContentState: Codable, Hashable {
+    /// Minutes until departure (updates as time passes)
+    public var minutesUntilDeparture: Int
 
-extension PATCOActivityAttributes.ContentState {
-    /// Create content state from an UpcomingTrain
-    static func from(train: UpcomingTrain) -> Self {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
+    /// Formatted departure time (e.g., "10:42 AM")
+    public var departureTimeString: String
 
-        return ContentState(
-            minutesUntilDeparture: train.minutesUntilDeparture,
-            departureTimeString: formatter.string(from: train.departureTime),
-            isArrivingSoon: train.minutesUntilDeparture <= 5,
-            lastUpdated: Date()
-        )
+    /// Whether the train is arriving soon (< 5 minutes)
+    public var isArrivingSoon: Bool
+
+    /// Timestamp of last update
+    public var lastUpdated: Date
+
+    public init(minutesUntilDeparture: Int, departureTimeString: String, isArrivingSoon: Bool, lastUpdated: Date) {
+        self.minutesUntilDeparture = minutesUntilDeparture
+        self.departureTimeString = departureTimeString
+        self.isArrivingSoon = isArrivingSoon
+        self.lastUpdated = lastUpdated
     }
 }

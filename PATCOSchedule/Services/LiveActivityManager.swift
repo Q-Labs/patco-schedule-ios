@@ -1,7 +1,26 @@
 import Foundation
 import ActivityKit
 
-/// Manages PATCO Live Activities for Lock Screen and Dynamic Island
+// MARK: - ContentState Helper Extension
+
+@available(iOS 16.1, *)
+extension PATCOActivityAttributes.ContentState {
+    /// Create content state from an UpcomingTrain
+    static func from(train: UpcomingTrain) -> Self {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+
+        return Self(
+            minutesUntilDeparture: train.minutesUntilDeparture,
+            departureTimeString: formatter.string(from: train.departureTime),
+            isArrivingSoon: train.minutesUntilDeparture <= 5,
+            lastUpdated: Date()
+        )
+    }
+}
+
+/// Manages PATCO Live Activity for Lock Screen and Dynamic Island
+@available(iOS 16.1, *)
 @MainActor
 class LiveActivityManager: ObservableObject {
 

@@ -1,6 +1,7 @@
 import XCTest
 @testable import PATCOSchedule
 
+@available(iOS 16.1, *)
 final class LiveActivityTests: XCTestCase {
 
     // MARK: - PATCOActivityAttributes Tests
@@ -197,6 +198,7 @@ final class LiveActivityTests: XCTestCase {
 
 // MARK: - LiveActivityManager Tests
 
+@available(iOS 16.1, *)
 final class LiveActivityManagerTests: XCTestCase {
 
     @MainActor

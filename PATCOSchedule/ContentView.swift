@@ -298,26 +298,24 @@ struct AllStationsView: View {
     @EnvironmentObject var scheduleService: ScheduleService
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section("New Jersey") {
-                    ForEach(Station.allStations.filter { $0.order <= 8 }) { station in
-                        NavigationLink(destination: StationDetailView(station: station)) {
-                            StationQuickView(station: station)
-                        }
-                    }
-                }
-
-                Section("Philadelphia") {
-                    ForEach(Station.allStations.filter { $0.order > 8 }) { station in
-                        NavigationLink(destination: StationDetailView(station: station)) {
-                            StationQuickView(station: station)
-                        }
+        List {
+            Section("New Jersey") {
+                ForEach(Station.allStations.filter { $0.order <= 8 }) { station in
+                    NavigationLink(destination: StationDetailView(station: station)) {
+                        StationQuickView(station: station)
                     }
                 }
             }
-            .navigationTitle("All Stations")
+
+            Section("Philadelphia") {
+                ForEach(Station.allStations.filter { $0.order > 8 }) { station in
+                    NavigationLink(destination: StationDetailView(station: station)) {
+                        StationQuickView(station: station)
+                    }
+                }
+            }
         }
+        .navigationTitle("All Stations")
     }
 }
 

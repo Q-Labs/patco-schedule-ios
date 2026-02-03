@@ -337,11 +337,12 @@ struct StationQuickView: View {
                 .font(.headline)
 
             HStack(spacing: 16) {
-                // To Philly
+                // To Philly (Westbound)
                 if station.order < 12 {
                     HStack(spacing: 4) {
-                        Image(systemName: "arrow.left")
+                        Text("Philly")
                             .font(.caption)
+                            .fontWeight(.medium)
                             .foregroundColor(.purple)
                         if let train = nextWestbound {
                             Text("\(train.minutesUntilDeparture)m")
@@ -355,11 +356,12 @@ struct StationQuickView: View {
                     }
                 }
 
-                // To NJ
+                // To Lindenwold (Eastbound)
                 if station.order > 0 {
                     HStack(spacing: 4) {
-                        Image(systemName: "arrow.right")
+                        Text("Lindenwold")
                             .font(.caption)
+                            .fontWeight(.medium)
                             .foregroundColor(.green)
                         if let train = nextEastbound {
                             Text("\(train.minutesUntilDeparture)m")

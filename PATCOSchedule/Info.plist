@@ -6,6 +6,14 @@
 	<key>CFBundleDisplayName</key>
 	<string>PATCO Schedule</string>
 
+	<!-- Bundle Executable -->
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+
+	<!-- Bundle Package Type -->
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+
 	<!-- Bundle Identifier and Version -->
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>

@@ -58,7 +58,7 @@ class LiveActivityManager: ObservableObject {
     private var trackedStation: Station?
 
     /// Current direction being tracked
-    private var trackedDirection: TrainDirection?
+    private var trackedDirection: TransitDirection?
 
     /// Tracked departure time for the current train
     private var trackedDepartureTime: Date?
@@ -86,7 +86,7 @@ class LiveActivityManager: ObservableObject {
     /// Start a Live Activity for a specific train
     func startActivity(
         station: Station,
-        direction: TrainDirection,
+        direction: TransitDirection,
         train: UpcomingTrain
     ) {
         guard isSupported else {
@@ -103,7 +103,7 @@ class LiveActivityManager: ObservableObject {
 
         let attributes = PATCOActivityAttributes(
             stationName: station.displayName,
-            direction: direction == .westbound ? "Westbound" : "Eastbound",
+            direction: direction.displayName,
             destination: train.headsign,
             tripId: train.tripId,
             scheduledDeparture: train.departureTime

@@ -71,12 +71,15 @@ struct TrainRowCompactView: View {
 }
 
 #Preview {
+    let provider = PATCOProvider()
+    let eastbound = provider.directions.first { $0.id == "eastbound" }!
+    let westbound = provider.directions.first { $0.id == "westbound" }!
     List {
         TrainRowView(train: UpcomingTrain(
             departureTime: Date().addingTimeInterval(180),
             arrivalTimeString: "10:30:00",
             headsign: "Lindenwold",
-            direction: .eastbound,
+            direction: eastbound,
             tripId: "123"
         ))
 
@@ -84,7 +87,7 @@ struct TrainRowCompactView: View {
             departureTime: Date().addingTimeInterval(600),
             arrivalTimeString: "10:40:00",
             headsign: "15th-16th & Locust",
-            direction: .westbound,
+            direction: westbound,
             tripId: "456"
         ))
     }

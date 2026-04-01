@@ -264,12 +264,7 @@ struct BundledScheduleData {
             )
             trips.append(trip)
 
-            // Generate stop times for this trip
-            let tripStopTimes = generateStopTimes(
-                tripId: tripId,
-                startTime: departureTime,
-                direction: .westbound
-            )
+            let tripStopTimes = generateStopTimes(tripId: tripId, startTime: departureTime, directionId: 0)
             stopTimes.append(contentsOf: tripStopTimes)
         }
 
@@ -285,12 +280,7 @@ struct BundledScheduleData {
             )
             trips.append(trip)
 
-            // Generate stop times for this trip
-            let tripStopTimes = generateStopTimes(
-                tripId: tripId,
-                startTime: departureTime,
-                direction: .eastbound
-            )
+            let tripStopTimes = generateStopTimes(tripId: tripId, startTime: departureTime, directionId: 1)
             stopTimes.append(contentsOf: tripStopTimes)
         }
 
@@ -300,19 +290,18 @@ struct BundledScheduleData {
     private static func generateStopTimes(
         tripId: String,
         startTime: String,
-        direction: TrainDirection
+        directionId: Int
     ) -> [GTFSStopTime] {
         var stopTimes: [GTFSStopTime] = []
         let stationOrder: [GTFSStop]
         let travelTimes: [Int]
 
-        switch direction {
-        case .westbound:
-            // Lindenwold to 15-16th
+        if directionId == 0 {
+            // Westbound: Lindenwold to 15-16th
             stationOrder = stops
             travelTimes = cumulativeTravelTimes
-        case .eastbound:
-            // 15-16th to Lindenwold (reverse order)
+        } else {
+            // Eastbound: 15-16th to Lindenwold (reverse order)
             stationOrder = stops.reversed()
             travelTimes = cumulativeTravelTimes.reversed().map { cumulativeTravelTimes.last! - $0 }
         }

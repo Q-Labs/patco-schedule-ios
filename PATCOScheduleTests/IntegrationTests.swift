@@ -5,6 +5,11 @@ import XCTest
 @MainActor
 final class IntegrationTests: XCTestCase {
 
+    let provider = PATCOProvider()
+
+    var westbound: TransitDirection { provider.directions.first { $0.id == "westbound" }! }
+    var eastbound: TransitDirection { provider.directions.first { $0.id == "eastbound" }! }
+
     // MARK: - End-to-End Schedule Tests
 
     func testFullScheduleLoadAndQuery() async {
@@ -16,13 +21,13 @@ final class IntegrationTests: XCTestCase {
         XCTAssertTrue(service.loadState.isLoaded)
 
         // Query trains for multiple stations
-        for station in Station.allStations {
-            let westbound = service.getUpcomingTrains(for: station, direction: .westbound, limit: 3)
-            let eastbound = service.getUpcomingTrains(for: station, direction: .eastbound, limit: 3)
+        for station in provider.stations {
+            let wb = service.getUpcomingTrains(for: station, direction: westbound, limit: 3)
+            let eb = service.getUpcomingTrains(for: station, direction: eastbound, limit: 3)
 
             // At minimum, each station should be queryable without error
-            XCTAssertNotNil(westbound)
-            XCTAssertNotNil(eastbound)
+            XCTAssertNotNil(wb)
+            XCTAssertNotNil(eb)
         }
     }
 
@@ -30,20 +35,21 @@ final class IntegrationTests: XCTestCase {
         let service = ScheduleService()
 
         // Get initial train count
-        let station = Station.allStations[5]
-        let initialTrains = service.getUpcomingTrains(for: station, direction: .westbound, limit: 5)
+        let station = provider.stations[5]
+        let initialTrains = service.getUpcomingTrains(for: station, direction: westbound, limit: 5)
 
         // Reload schedule
         await service.loadSchedule()
 
         // Get trains again
-        let reloadedTrains = service.getUpcomingTrains(for: station, direction: .westbound, limit: 5)
+        let reloadedTrains = service.getUpcomingTrains(for: station, direction: westbound, limit: 5)
 
         // Should still have data
         XCTAssertTrue(service.hasScheduleData)
 
         // Train count should be similar (may vary slightly due to time passing)
         XCTAssertFalse(reloadedTrains.isEmpty)
+        _ = initialTrains // suppress unused warning
     }
 
     // MARK: - Trip Consistency Tests
@@ -134,8 +140,8 @@ final class IntegrationTests: XCTestCase {
         // by querying trains at different stations
         var totalTrainsFound = 0
 
-        for station in Station.allStations {
-            let trains = service.getUpcomingTrains(for: station, direction: .westbound, limit: 100)
+        for station in provider.stations {
+            let trains = service.getUpcomingTrains(for: station, direction: westbound, limit: 100)
             totalTrainsFound += trains.count
         }
 
@@ -149,7 +155,7 @@ final class IntegrationTests: XCTestCase {
         let data = BundledScheduleData.generateScheduleData()
         let stopIds = Set(data.stops.map { $0.id })
 
-        for station in Station.allStations {
+        for station in provider.stations {
             XCTAssertTrue(stopIds.contains(station.id),
                 "Station \(station.name) should have matching stop in schedule data")
         }
@@ -168,7 +174,7 @@ final class IntegrationTests: XCTestCase {
             .filter { $0.tripId == westboundTrip.id }
             .map { $0.stopId })
 
-        for station in Station.allStations {
+        for station in provider.stations {
             XCTAssertTrue(westboundStops.contains(station.id),
                 "Westbound trip should serve \(station.name)")
         }
@@ -183,7 +189,7 @@ final class IntegrationTests: XCTestCase {
             .filter { $0.tripId == eastboundTrip.id }
             .map { $0.stopId })
 
-        for station in Station.allStations {
+        for station in provider.stations {
             XCTAssertTrue(eastboundStops.contains(station.id),
                 "Eastbound trip should serve \(station.name)")
         }
@@ -195,17 +201,17 @@ final class IntegrationTests: XCTestCase {
         let service = ScheduleService()
 
         // Simulate checking trains at Haddonfield (common suburb station)
-        let haddonfield = Station.allStations[3]
+        let haddonfield = provider.stations[3]
 
         // Get westbound trains (to Philadelphia)
-        let trains = service.getUpcomingTrains(for: haddonfield, direction: .westbound, limit: 5)
+        let trains = service.getUpcomingTrains(for: haddonfield, direction: westbound, limit: 5)
 
         // Should have service
         XCTAssertFalse(trains.isEmpty, "Should have westbound service from Haddonfield")
 
         // All trains should be going to Philly
         for train in trains {
-            XCTAssertEqual(train.direction, .westbound)
+            XCTAssertEqual(train.direction.id, "westbound")
             XCTAssertTrue(train.headsign.contains("15") || train.headsign.contains("Locust"))
         }
     }
@@ -214,17 +220,17 @@ final class IntegrationTests: XCTestCase {
         let service = ScheduleService()
 
         // Simulate checking trains at 8th and Market (Philadelphia)
-        let eighthAndMarket = Station.allStations[9]
+        let eighthAndMarket = provider.stations[9]
 
         // Get eastbound trains (to New Jersey)
-        let trains = service.getUpcomingTrains(for: eighthAndMarket, direction: .eastbound, limit: 5)
+        let trains = service.getUpcomingTrains(for: eighthAndMarket, direction: eastbound, limit: 5)
 
         // Should have service
         XCTAssertFalse(trains.isEmpty, "Should have eastbound service from 8th & Market")
 
         // All trains should be going to Lindenwold
         for train in trains {
-            XCTAssertEqual(train.direction, .eastbound)
+            XCTAssertEqual(train.direction.id, "eastbound")
             XCTAssertTrue(train.headsign.lowercased().contains("lindenwold"))
         }
     }
@@ -235,11 +241,11 @@ final class IntegrationTests: XCTestCase {
         let service = ScheduleService()
 
         await withTaskGroup(of: Bool.self) { group in
-            for station in Station.allStations {
+            for station in provider.stations {
                 group.addTask {
-                    let westbound = await service.getUpcomingTrains(for: station, direction: .westbound, limit: 5)
-                    let eastbound = await service.getUpcomingTrains(for: station, direction: .eastbound, limit: 5)
-                    return !westbound.isEmpty || !eastbound.isEmpty || station.order == 0 || station.order == 12
+                    let wb = await service.getUpcomingTrains(for: station, direction: self.westbound, limit: 5)
+                    let eb = await service.getUpcomingTrains(for: station, direction: self.eastbound, limit: 5)
+                    return !wb.isEmpty || !eb.isEmpty || station.order == 0 || station.order == 12
                 }
             }
 

@@ -5,12 +5,12 @@ struct NextTrainView: View {
     let station: Station
     @EnvironmentObject var scheduleService: ScheduleService
     @StateObject private var liveActivityManager = LiveActivityManager()
-    @State private var eastboundTrain: UpcomingTrain?
-    @State private var westboundTrain: UpcomingTrain?
+    @State private var trainsByDirection: [String: UpcomingTrain] = [:]
     @State private var refreshTimer: Timer?
-    @State private var showingLiveActivityPicker = false
 
     var body: some View {
+        let provider = scheduleService.provider
+
         VStack(spacing: 20) {
             // Station header
             VStack(spacing: 8) {
@@ -40,27 +40,17 @@ struct NextTrainView: View {
             } else if !scheduleService.isLoading {
                 // Next trains cards
                 HStack(spacing: 16) {
-                    // Westbound (to Philly)
-                    NextTrainCard(
-                        direction: .westbound,
-                        train: westboundTrain,
-                        stationOrder: station.order,
-                        hasScheduleData: scheduleService.hasScheduleData,
-                        onTrackTapped: { train in
-                            startLiveActivity(direction: .westbound, train: train)
-                        }
-                    )
-
-                    // Eastbound (to Lindenwold)
-                    NextTrainCard(
-                        direction: .eastbound,
-                        train: eastboundTrain,
-                        stationOrder: station.order,
-                        hasScheduleData: scheduleService.hasScheduleData,
-                        onTrackTapped: { train in
-                            startLiveActivity(direction: .eastbound, train: train)
-                        }
-                    )
+                    ForEach(provider.directions) { direction in
+                        NextTrainCard(
+                            direction: direction,
+                            train: trainsByDirection[direction.id],
+                            isTerminus: provider.isTerminus(station: station, direction: direction),
+                            hasScheduleData: scheduleService.hasScheduleData,
+                            onTrackTapped: { train in
+                                startLiveActivity(direction: direction, train: train)
+                            }
+                        )
+                    }
                 }
                 .padding(.horizontal)
 
@@ -110,8 +100,12 @@ struct NextTrainView: View {
     }
 
     private func refreshTrains() {
-        eastboundTrain = scheduleService.getNextTrain(for: station, direction: .eastbound)
-        westboundTrain = scheduleService.getNextTrain(for: station, direction: .westbound)
+        let provider = scheduleService.provider
+        var updated: [String: UpcomingTrain] = [:]
+        for direction in provider.directions {
+            updated[direction.id] = scheduleService.getNextTrain(for: station, direction: direction)
+        }
+        trainsByDirection = updated
     }
 
     private func startRefreshTimer() {
@@ -127,44 +121,32 @@ struct NextTrainView: View {
         refreshTimer = nil
     }
 
-    private func startLiveActivity(direction: TrainDirection, train: UpcomingTrain) {
-        guard liveActivityManager.isSupported else {
-            return
-        }
+    private func startLiveActivity(direction: TransitDirection, train: UpcomingTrain) {
+        guard liveActivityManager.isSupported else { return }
         liveActivityManager.startActivity(station: station, direction: direction, train: train)
     }
 }
 
 struct NextTrainCard: View {
-    let direction: TrainDirection
+    let direction: TransitDirection
     let train: UpcomingTrain?
-    let stationOrder: Int
+    let isTerminus: Bool
     let hasScheduleData: Bool
     var onTrackTapped: ((UpcomingTrain) -> Void)?
-
-    var isTerminus: Bool {
-        switch direction {
-        case .eastbound:
-            return stationOrder == 0 // Lindenwold
-        case .westbound:
-            return stationOrder == 13 // 15th-16th
-        }
-    }
 
     var body: some View {
         VStack(spacing: 12) {
             // Direction header
             HStack {
-                Image(systemName: direction == .westbound ? "arrow.left.circle.fill" : "arrow.right.circle.fill")
-                Text(direction == .westbound ? "To Philly" : "To NJ")
+                Image(systemName: "arrow.left.circle.fill")
+                Text(direction.shortLabel)
                     .font(.headline)
             }
-            .foregroundColor(direction == .westbound ? .purple : .green)
+            .foregroundColor(direction.color)
 
             Divider()
 
             if !hasScheduleData {
-                // No schedule data available
                 Image(systemName: "exclamationmark.triangle")
                     .font(.title)
                     .foregroundColor(.orange)
@@ -179,7 +161,6 @@ struct NextTrainCard: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             } else if let train = train {
-                // Minutes
                 Text("\(train.minutesUntilDeparture)")
                     .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundColor(train.minutesUntilDeparture <= 5 ? .orange : .primary)
@@ -188,12 +169,10 @@ struct NextTrainCard: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
-                // Departure time
                 Text(train.formattedDepartureTime)
                     .font(.caption)
                     .foregroundColor(.secondary)
 
-                // Track on Lock Screen button
                 if #available(iOS 16.1, *) {
                     Button {
                         onTrackTapped?(train)
@@ -293,6 +272,6 @@ struct ScheduleErrorView: View {
 }
 
 #Preview {
-    NextTrainView(station: Station.allStations[5])
+    NextTrainView(station: PATCOProvider().stations[5])
         .environmentObject(ScheduleService())
 }

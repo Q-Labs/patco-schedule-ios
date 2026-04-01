@@ -3,24 +3,34 @@ import SwiftUI
 struct StationDetailView: View {
     let station: Station
     @EnvironmentObject var scheduleService: ScheduleService
-    @State private var selectedDirection: TrainDirection = .westbound
+    @State private var selectedDirection: TransitDirection?
     @State private var upcomingTrains: [UpcomingTrain] = []
     @State private var refreshTimer: Timer?
 
+    var currentDirection: TransitDirection? {
+        selectedDirection ?? scheduleService.provider.directions.first
+    }
+
     var body: some View {
+        let provider = scheduleService.provider
+
         VStack(spacing: 0) {
             // Direction Picker
-            Picker("Direction", selection: $selectedDirection) {
-                ForEach(TrainDirection.allCases) { direction in
-                    Text(direction.destination)
-                        .tag(direction)
+            if let current = currentDirection {
+                Picker("Direction", selection: Binding(
+                    get: { current },
+                    set: { selectedDirection = $0 }
+                )) {
+                    ForEach(provider.directions) { direction in
+                        Text(direction.destination)
+                            .tag(direction)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .padding()
             }
-            .pickerStyle(.segmented)
-            .padding()
 
             if let errorMessage = scheduleService.loadState.errorMessage {
-                // Error state
                 Spacer()
                 ScheduleErrorView(message: errorMessage) {
                     Task {
@@ -34,7 +44,6 @@ struct StationDetailView: View {
                 ProgressView("Loading schedule...")
                 Spacer()
             } else if !scheduleService.hasScheduleData {
-                // No schedule data loaded
                 Spacer()
                 ContentUnavailableView(
                     "Schedule Data Unavailable",
@@ -57,7 +66,7 @@ struct StationDetailView: View {
                             TrainRowView(train: train)
                         }
                     } header: {
-                        Text("Next Trains to \(selectedDirection.destination)")
+                        Text("Next Trains to \(currentDirection?.destination ?? "")")
                     } footer: {
                         if case .loaded(let source) = scheduleService.loadState {
                             Text("Data source: \(source.rawValue)")
@@ -80,6 +89,9 @@ struct StationDetailView: View {
             }
         }
         .onAppear {
+            if selectedDirection == nil {
+                selectedDirection = provider.directions.first
+            }
             refreshTrains()
             startRefreshTimer()
         }
@@ -96,9 +108,10 @@ struct StationDetailView: View {
     }
 
     private func refreshTrains() {
+        guard let direction = currentDirection else { return }
         upcomingTrains = scheduleService.getUpcomingTrains(
             for: station,
-            direction: selectedDirection,
+            direction: direction,
             limit: 10
         )
     }
@@ -119,7 +132,7 @@ struct StationDetailView: View {
 
 #Preview {
     NavigationStack {
-        StationDetailView(station: Station.allStations[5])
+        StationDetailView(station: PATCOProvider().stations[5])
             .environmentObject(ScheduleService())
     }
 }

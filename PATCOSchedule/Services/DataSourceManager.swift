@@ -29,16 +29,19 @@ class DataSourceManager: ObservableObject {
 
     // MARK: - Private Properties
 
-    private let gtfsParser = GTFSParser()
-    private let pdfParser = PDFScheduleParser()
+    private let gtfsParser: GTFSParser
+    private let pdfParser: PDFScheduleParser
+    private let bundledDataGenerator: () -> ScheduleData
 
     // MARK: - Initialization
 
-    init() {
-        // Initialize with bundled data as available
+    init(gtfsParser: GTFSParser, pdfParser: PDFScheduleParser, bundledDataGenerator: @escaping () -> ScheduleData) {
+        self.gtfsParser = gtfsParser
+        self.pdfParser = pdfParser
+        self.bundledDataGenerator = bundledDataGenerator
         sourceStatuses[.bundled] = DataSourceStatus(
             type: .bundled,
-            lastUpdated: nil, // Bundled is always current
+            lastUpdated: nil,
             lastChecked: Date(),
             isAvailable: true,
             error: nil
@@ -50,7 +53,7 @@ class DataSourceManager: ObservableObject {
     /// Fetch the best available schedule data
     func fetchBestAvailableData() async -> (ScheduleData, DataSourceType) {
         // First, always have bundled data ready as fallback
-        let bundledData = BundledScheduleData.generateScheduleData()
+        let bundledData = bundledDataGenerator()
 
         // Check for special schedules first
         await checkForSpecialSchedules()
@@ -234,7 +237,7 @@ class DataSourceManager: ObservableObject {
 
         case .bundled:
             activeSource = .bundled
-            return BundledScheduleData.generateScheduleData()
+            return bundledDataGenerator()
 
         case .specialSchedule:
             // For special schedules, try to fetch from the special schedule PDF if available

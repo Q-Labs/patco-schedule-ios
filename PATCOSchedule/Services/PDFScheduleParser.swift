@@ -1,8 +1,27 @@
 import Foundation
 import PDFKit
 
-/// Parser for PATCO schedule PDFs as a fallback data source
+/// Configuration supplied by a TransitProvider for PDF-based schedule parsing.
+struct PDFParserConfig {
+    let scheduleURLs: [URL]
+    let schedulePage: URL?
+    let scheduleDomain: String
+    let directionPatterns: [String: [String]]
+    let stops: [GTFSStop]
+    let cumulativeTravelTimes: [Int]
+    let routeId: String
+    let westboundHeadsign: String
+    let eastboundHeadsign: String
+}
+
+/// Parser for transit schedule PDFs as a fallback data source.
 class PDFScheduleParser {
+
+    private let config: PDFParserConfig
+
+    init(config: PDFParserConfig) {
+        self.config = config
+    }
 
     enum PDFParserError: Error, LocalizedError {
         case downloadFailed(Error)
@@ -24,21 +43,6 @@ class PDFScheduleParser {
         }
     }
 
-    // MARK: - Known PATCO Schedule URLs
-
-    struct ScheduleURLs {
-        // Standard schedule PDFs
-        static let weekdaySchedule = URL(string: "https://www.ridepatco.org/schedules/schedules-background.pdf")
-        static let weekendSchedule = URL(string: "https://www.ridepatco.org/schedules/schedules-weekend.pdf")
-
-        // Schedule page to check for special schedules
-        static let schedulePage = URL(string: "https://www.ridepatco.org/schedules/")!
-
-        // Alternative schedule URLs
-        static let scheduleAlt1 = URL(string: "https://www.ridepatco.org/schedules/patco-schedule.pdf")
-        static let scheduleAlt2 = URL(string: "https://www.ridepatco.org/schedules/timetable.pdf")
-    }
-
     // MARK: - Special Schedule Detection
 
     struct SpecialScheduleInfo {
@@ -53,9 +57,10 @@ class PDFScheduleParser {
     func checkForSpecialSchedules() async -> [SpecialScheduleInfo] {
         var specialSchedules: [SpecialScheduleInfo] = []
 
-        // Try to fetch and parse the schedule page for special schedule announcements
+        guard let schedulePage = config.schedulePage else { return specialSchedules }
+
         do {
-            let (data, response) = try await URLSession.shared.data(from: ScheduleURLs.schedulePage)
+            let (data, response) = try await URLSession.shared.data(from: schedulePage)
 
             guard let httpResponse = response as? HTTPURLResponse,
                   (200...299).contains(httpResponse.statusCode),
@@ -135,9 +140,9 @@ class PDFScheduleParser {
             if urlString.hasPrefix("http") {
                 return URL(string: urlString)
             } else if urlString.hasPrefix("/") {
-                return URL(string: "https://www.ridepatco.org\(urlString)")
+                return URL(string: "\(config.scheduleDomain)\(urlString)")
             } else {
-                return URL(string: "https://www.ridepatco.org/schedules/\(urlString)")
+                return URL(string: "\(config.scheduleDomain)/schedules/\(urlString)")
             }
         }
 
@@ -206,12 +211,7 @@ class PDFScheduleParser {
 
     /// Try to fetch schedule from any available PDF source
     func fetchScheduleFromPDF() async throws -> ScheduleData {
-        // Try known URLs in order of preference
-        let urlsToTry = [
-            ScheduleURLs.weekdaySchedule,
-            ScheduleURLs.scheduleAlt1,
-            ScheduleURLs.scheduleAlt2
-        ].compactMap { $0 }
+        let urlsToTry = config.scheduleURLs
 
         var lastError: Error = PDFParserError.pdfLoadFailed
 
@@ -260,8 +260,8 @@ class PDFScheduleParser {
     private func parseScheduleText(_ text: String) throws -> ScheduleData {
         var scheduleData = ScheduleData()
 
-        // Use bundled stops as our reference
-        scheduleData.stops = BundledScheduleData.stops
+        // Use provider-supplied stops as our reference
+        scheduleData.stops = config.stops
         scheduleData.calendars = BundledScheduleData.calendars
 
         // Extract departure times from the text
@@ -269,7 +269,7 @@ class PDFScheduleParser {
 
         if departureTimes.westbound.isEmpty && departureTimes.eastbound.isEmpty {
             // If we couldn't parse times, return bundled data as fallback
-            return BundledScheduleData.generateScheduleData()
+            return ScheduleData()
         }
 
         // Generate trips and stop times from extracted departures
@@ -330,16 +330,12 @@ class PDFScheduleParser {
         for line in lines {
             let lowercaseLine = line.lowercased()
 
-            // Detect direction changes
-            if lowercaseLine.contains("to philadelphia") ||
-               lowercaseLine.contains("westbound") ||
-               lowercaseLine.contains("to 15") ||
-               lowercaseLine.contains("to locust") {
-                currentDirection = "westbound"
-            } else if lowercaseLine.contains("to lindenwold") ||
-                      lowercaseLine.contains("eastbound") ||
-                      lowercaseLine.contains("to new jersey") {
-                currentDirection = "eastbound"
+            // Detect direction changes using provider-supplied patterns
+            for (dirId, patterns) in config.directionPatterns {
+                if patterns.contains(where: { lowercaseLine.contains($0) }) {
+                    currentDirection = dirId
+                    break
+                }
             }
 
             // Extract times from this line
@@ -402,17 +398,17 @@ class PDFScheduleParser {
         var trips: [GTFSTrip] = []
         var stopTimes: [GTFSStopTime] = []
 
-        let travelTimes = BundledScheduleData.cumulativeTravelTimes
-        let stops = BundledScheduleData.stops
+        let travelTimes = config.cumulativeTravelTimes
+        let stops = config.stops
 
         // Generate westbound trips
         for (index, departureTime) in westboundDepartures.enumerated() {
             let tripId = "\(serviceId)_PDF_WB_\(index)"
             let trip = GTFSTrip(
                 id: tripId,
-                routeId: "PATCO",
+                routeId: config.routeId,
                 serviceId: serviceId,
-                headsign: "15th-16th & Locust",
+                headsign: config.westboundHeadsign,
                 directionId: 0
             )
             trips.append(trip)
@@ -443,9 +439,9 @@ class PDFScheduleParser {
             let tripId = "\(serviceId)_PDF_EB_\(index)"
             let trip = GTFSTrip(
                 id: tripId,
-                routeId: "PATCO",
+                routeId: config.routeId,
                 serviceId: serviceId,
-                headsign: "Lindenwold",
+                headsign: config.eastboundHeadsign,
                 directionId: 1
             )
             trips.append(trip)

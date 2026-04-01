@@ -5,6 +5,10 @@ import XCTest
 final class ScheduleServiceTests: XCTestCase {
 
     var scheduleService: ScheduleService!
+    let provider = PATCOProvider()
+
+    var westbound: TransitDirection { provider.directions.first { $0.id == "westbound" }! }
+    var eastbound: TransitDirection { provider.directions.first { $0.id == "eastbound" }! }
 
     override func setUp() async throws {
         scheduleService = ScheduleService()
@@ -69,24 +73,24 @@ final class ScheduleServiceTests: XCTestCase {
     // MARK: - Get Upcoming Trains Tests
 
     func testGetUpcomingTrainsReturnsTrains() {
-        let station = Station.allStations[5] // Collingswood (middle station)
-        let trains = scheduleService.getUpcomingTrains(for: station, direction: .westbound)
+        let station = provider.stations[5] // Collingswood (middle station)
+        let trains = scheduleService.getUpcomingTrains(for: station, direction: westbound)
 
         XCTAssertFalse(trains.isEmpty, "Should return upcoming trains")
     }
 
     func testGetUpcomingTrainsRespectsLimit() {
-        let station = Station.allStations[5]
+        let station = provider.stations[5]
         let limit = 3
-        let trains = scheduleService.getUpcomingTrains(for: station, direction: .westbound, limit: limit)
+        let trains = scheduleService.getUpcomingTrains(for: station, direction: westbound, limit: limit)
 
         XCTAssertLessThanOrEqual(trains.count, limit,
             "Should not exceed limit")
     }
 
     func testGetUpcomingTrainsSortedByDepartureTime() {
-        let station = Station.allStations[5]
-        let trains = scheduleService.getUpcomingTrains(for: station, direction: .westbound, limit: 10)
+        let station = provider.stations[5]
+        let trains = scheduleService.getUpcomingTrains(for: station, direction: westbound, limit: 10)
 
         for i in 1..<trains.count {
             XCTAssertLessThanOrEqual(trains[i-1].departureTime, trains[i].departureTime,
@@ -95,22 +99,22 @@ final class ScheduleServiceTests: XCTestCase {
     }
 
     func testGetUpcomingTrainsReturnsCorrectDirection() {
-        let station = Station.allStations[5]
+        let station = provider.stations[5]
 
-        let westboundTrains = scheduleService.getUpcomingTrains(for: station, direction: .westbound)
+        let westboundTrains = scheduleService.getUpcomingTrains(for: station, direction: westbound)
         for train in westboundTrains {
-            XCTAssertEqual(train.direction, .westbound)
+            XCTAssertEqual(train.direction.id, "westbound")
         }
 
-        let eastboundTrains = scheduleService.getUpcomingTrains(for: station, direction: .eastbound)
+        let eastboundTrains = scheduleService.getUpcomingTrains(for: station, direction: eastbound)
         for train in eastboundTrains {
-            XCTAssertEqual(train.direction, .eastbound)
+            XCTAssertEqual(train.direction.id, "eastbound")
         }
     }
 
     func testGetUpcomingTrainsOnlyFutureTrains() {
-        let station = Station.allStations[5]
-        let trains = scheduleService.getUpcomingTrains(for: station, direction: .westbound)
+        let station = provider.stations[5]
+        let trains = scheduleService.getUpcomingTrains(for: station, direction: westbound)
         let now = Date()
 
         for train in trains {
@@ -122,9 +126,9 @@ final class ScheduleServiceTests: XCTestCase {
     // MARK: - Get Next Train Tests
 
     func testGetNextTrainReturnsFirstTrain() {
-        let station = Station.allStations[5]
-        let nextTrain = scheduleService.getNextTrain(for: station, direction: .westbound)
-        let allTrains = scheduleService.getUpcomingTrains(for: station, direction: .westbound, limit: 10)
+        let station = provider.stations[5]
+        let nextTrain = scheduleService.getNextTrain(for: station, direction: westbound)
+        let allTrains = scheduleService.getUpcomingTrains(for: station, direction: westbound, limit: 10)
 
         if let next = nextTrain, !allTrains.isEmpty {
             XCTAssertEqual(next.departureTime, allTrains[0].departureTime,
@@ -134,27 +138,27 @@ final class ScheduleServiceTests: XCTestCase {
 
     func testGetNextTrainReturnsNilForTerminus() {
         // Lindenwold is the eastbound terminus - no eastbound trains depart from there
-        let lindenwold = Station.allStations[0]
+        let lindenwold = provider.stations[0]
 
         // At Lindenwold, westbound trains should exist
-        let westbound = scheduleService.getNextTrain(for: lindenwold, direction: .westbound)
-        XCTAssertNotNil(westbound, "Should have westbound trains from Lindenwold")
+        let wb = scheduleService.getNextTrain(for: lindenwold, direction: westbound)
+        XCTAssertNotNil(wb, "Should have westbound trains from Lindenwold")
     }
 
     // MARK: - Station Matching Tests
 
     func testGetUpcomingTrainsForAllStations() {
-        for station in Station.allStations {
+        for station in provider.stations {
             // Skip terminus checks - they may not have both directions
             if station.order == 0 || station.order == 12 {
                 continue
             }
 
-            let westbound = scheduleService.getUpcomingTrains(for: station, direction: .westbound, limit: 1)
-            let eastbound = scheduleService.getUpcomingTrains(for: station, direction: .eastbound, limit: 1)
+            let wb = scheduleService.getUpcomingTrains(for: station, direction: westbound, limit: 1)
+            let eb = scheduleService.getUpcomingTrains(for: station, direction: eastbound, limit: 1)
 
             // Mid-line stations should have service in both directions
-            let hasService = !westbound.isEmpty || !eastbound.isEmpty
+            let hasService = !wb.isEmpty || !eb.isEmpty
             XCTAssertTrue(hasService,
                 "Station \(station.name) should have trains in at least one direction")
         }
@@ -163,8 +167,8 @@ final class ScheduleServiceTests: XCTestCase {
     // MARK: - Headsign Tests
 
     func testWestboundTrainsHaveCorrectHeadsign() {
-        let station = Station.allStations[5]
-        let trains = scheduleService.getUpcomingTrains(for: station, direction: .westbound, limit: 5)
+        let station = provider.stations[5]
+        let trains = scheduleService.getUpcomingTrains(for: station, direction: westbound, limit: 5)
 
         for train in trains {
             XCTAssertTrue(
@@ -177,8 +181,8 @@ final class ScheduleServiceTests: XCTestCase {
     }
 
     func testEastboundTrainsHaveCorrectHeadsign() {
-        let station = Station.allStations[5]
-        let trains = scheduleService.getUpcomingTrains(for: station, direction: .eastbound, limit: 5)
+        let station = provider.stations[5]
+        let trains = scheduleService.getUpcomingTrains(for: station, direction: eastbound, limit: 5)
 
         for train in trains {
             XCTAssertTrue(
@@ -191,11 +195,11 @@ final class ScheduleServiceTests: XCTestCase {
     // MARK: - Performance Tests
 
     func testGetUpcomingTrainsPerformance() {
-        let station = Station.allStations[5]
+        let station = provider.stations[5]
 
         measure {
             for _ in 0..<100 {
-                _ = scheduleService.getUpcomingTrains(for: station, direction: .westbound, limit: 5)
+                _ = scheduleService.getUpcomingTrains(for: station, direction: westbound, limit: 5)
             }
         }
     }
@@ -203,15 +207,15 @@ final class ScheduleServiceTests: XCTestCase {
     // MARK: - Edge Cases
 
     func testGetUpcomingTrainsWithZeroLimit() {
-        let station = Station.allStations[5]
-        let trains = scheduleService.getUpcomingTrains(for: station, direction: .westbound, limit: 0)
+        let station = provider.stations[5]
+        let trains = scheduleService.getUpcomingTrains(for: station, direction: westbound, limit: 0)
 
         XCTAssertTrue(trains.isEmpty, "Zero limit should return empty array")
     }
 
     func testGetUpcomingTrainsWithLargeLimit() {
-        let station = Station.allStations[5]
-        let trains = scheduleService.getUpcomingTrains(for: station, direction: .westbound, limit: 1000)
+        let station = provider.stations[5]
+        let trains = scheduleService.getUpcomingTrains(for: station, direction: westbound, limit: 1000)
 
         // Should return all available trains without crashing
         XCTAssertNotNil(trains)

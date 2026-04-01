@@ -3,6 +3,8 @@ import XCTest
 
 final class GTFSModelsTests: XCTestCase {
 
+    let provider = PATCOProvider()
+
     // MARK: - GTFSStop Tests
 
     func testGTFSStopDecoding() throws {
@@ -170,14 +172,14 @@ final class GTFSModelsTests: XCTestCase {
         XCTAssertFalse(saturdayCalendar.isActiveOn(weekday: 1)) // Sunday
     }
 
-    // MARK: - Station Tests
+    // MARK: - Station Tests (via PATCOProvider)
 
-    func testStationAllStationsCount() {
-        XCTAssertEqual(Station.allStations.count, 14)
+    func testProviderStationsCount() {
+        XCTAssertEqual(provider.stations.count, 14)
     }
 
-    func testStationOrdering() {
-        let stations = Station.allStations
+    func testProviderStationOrdering() {
+        let stations = provider.stations
         XCTAssertEqual(stations[0].name, "Lindenwold")
         XCTAssertEqual(stations[0].order, 0)
         XCTAssertEqual(stations[9].name, "Franklin Square")
@@ -186,55 +188,65 @@ final class GTFSModelsTests: XCTestCase {
         XCTAssertEqual(stations[13].order, 13)
     }
 
-    func testStationFindMatching() {
+    func testProviderFindStation() {
         // Exact match
-        let lindenwold = Station.findStation(matching: "Lindenwold")
+        let lindenwold = provider.findStation(matching: "Lindenwold")
         XCTAssertNotNil(lindenwold)
         XCTAssertEqual(lindenwold?.id, "LINDENWOLD")
 
         // Partial match
-        let ferry = Station.findStation(matching: "Ferry")
+        let ferry = provider.findStation(matching: "Ferry")
         XCTAssertNotNil(ferry)
         XCTAssertEqual(ferry?.id, "FERRY")
 
         // Case insensitive
-        let haddonfield = Station.findStation(matching: "HADDONFIELD")
+        let haddonfield = provider.findStation(matching: "HADDONFIELD")
         XCTAssertNotNil(haddonfield)
         XCTAssertEqual(haddonfield?.name, "Haddonfield")
 
         // ID match
-        let cityHall = Station.findStation(matching: "CITYHALL")
+        let cityHall = provider.findStation(matching: "CITYHALL")
         XCTAssertNotNil(cityHall)
         XCTAssertEqual(cityHall?.name, "City Hall")
     }
 
-    func testStationFindMatchingNoMatch() {
-        let notFound = Station.findStation(matching: "NonExistentStation")
+    func testProviderFindStationNoMatch() {
+        let notFound = provider.findStation(matching: "NonExistentStation")
         XCTAssertNil(notFound)
     }
 
-    // MARK: - TrainDirection Tests
+    // MARK: - TransitDirection Tests
 
-    func testTrainDirectionDestinations() {
-        XCTAssertEqual(TrainDirection.eastbound.destination, "Lindenwold")
-        XCTAssertEqual(TrainDirection.westbound.destination, "15th-16th & Locust")
+    func testProviderDirectionsCount() {
+        XCTAssertEqual(provider.directions.count, 2)
     }
 
-    func testTrainDirectionAllCases() {
-        XCTAssertEqual(TrainDirection.allCases.count, 2)
-        XCTAssertTrue(TrainDirection.allCases.contains(.eastbound))
-        XCTAssertTrue(TrainDirection.allCases.contains(.westbound))
+    func testProviderDirectionDestinations() {
+        let eastbound = provider.directions.first { $0.id == "eastbound" }
+        let westbound = provider.directions.first { $0.id == "westbound" }
+
+        XCTAssertNotNil(eastbound)
+        XCTAssertNotNil(westbound)
+        XCTAssertEqual(eastbound?.destination, "Lindenwold")
+        XCTAssertTrue(westbound?.destination.contains("Locust") ?? false)
+    }
+
+    func testProviderDirectionIdentifiers() {
+        let ids = Set(provider.directions.map { $0.id })
+        XCTAssertTrue(ids.contains("eastbound"))
+        XCTAssertTrue(ids.contains("westbound"))
     }
 
     // MARK: - UpcomingTrain Tests
 
     func testUpcomingTrainMinutesUntilDeparture() {
         let futureDate = Date().addingTimeInterval(300) // 5 minutes from now
+        let direction = provider.directions.first { $0.id == "eastbound" }!
         let train = UpcomingTrain(
             departureTime: futureDate,
             arrivalTimeString: "12:00:00",
             headsign: "Lindenwold",
-            direction: .eastbound,
+            direction: direction,
             tripId: "TEST"
         )
 
@@ -245,11 +257,12 @@ final class GTFSModelsTests: XCTestCase {
 
     func testUpcomingTrainMinutesUntilDeparturePastTrain() {
         let pastDate = Date().addingTimeInterval(-300) // 5 minutes ago
+        let direction = provider.directions.first { $0.id == "eastbound" }!
         let train = UpcomingTrain(
             departureTime: pastDate,
             arrivalTimeString: "12:00:00",
             headsign: "Lindenwold",
-            direction: .eastbound,
+            direction: direction,
             tripId: "TEST"
         )
 
@@ -259,11 +272,12 @@ final class GTFSModelsTests: XCTestCase {
     func testUpcomingTrainFormattedDepartureTime() {
         let components = DateComponents(hour: 14, minute: 30)
         let date = Calendar.current.date(from: components)!
+        let direction = provider.directions.first { $0.id == "westbound" }!
         let train = UpcomingTrain(
             departureTime: date,
             arrivalTimeString: "14:30:00",
             headsign: "Test",
-            direction: .westbound,
+            direction: direction,
             tripId: "TEST"
         )
 

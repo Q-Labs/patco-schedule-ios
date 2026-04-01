@@ -29,7 +29,11 @@ class GTFSParser {
         }
     }
 
-    static let gtfsURL = URL(string: "https://www.ridepatco.org/developers/PortAuthorityTransitCorporation.zip")!
+    let gtfsURL: URL
+
+    init(gtfsURL: URL) {
+        self.gtfsURL = gtfsURL
+    }
 
     // MARK: - GTFS Update Info
 
@@ -41,7 +45,7 @@ class GTFSParser {
 
     /// Check when the GTFS data was last updated without downloading the full file
     func checkGTFSUpdateInfo() async throws -> GTFSUpdateInfo {
-        var request = URLRequest(url: Self.gtfsURL)
+        var request = URLRequest(url: self.gtfsURL)
         request.httpMethod = "HEAD"
 
         let (_, response) = try await URLSession.shared.data(for: request)
@@ -182,7 +186,7 @@ class GTFSParser {
     // MARK: - Download
 
     private func downloadGTFSZip() async throws -> Data {
-        let (data, response) = try await URLSession.shared.data(from: Self.gtfsURL)
+        let (data, response) = try await URLSession.shared.data(from: self.gtfsURL)
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {

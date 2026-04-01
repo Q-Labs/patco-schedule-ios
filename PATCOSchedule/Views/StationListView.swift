@@ -6,10 +6,11 @@ struct StationListView: View {
     @State private var searchText = ""
 
     var filteredStations: [Station] {
+        let all = scheduleService.provider.stations
         if searchText.isEmpty {
-            return Station.allStations
+            return all
         }
-        return Station.allStations.filter {
+        return all.filter {
             $0.name.localizedCaseInsensitiveContains(searchText) ||
             $0.displayName.localizedCaseInsensitiveContains(searchText)
         }
@@ -28,10 +29,10 @@ struct StationListView: View {
             } header: {
                 HStack {
                     Image(systemName: "tram.fill")
-                    Text("PATCO Stations")
+                    Text(scheduleService.provider.displayName)
                 }
             } footer: {
-                Text("Lindenwold, NJ to Philadelphia, PA")
+                Text(scheduleService.provider.tagline)
                     .font(.caption)
             }
         }
@@ -74,7 +75,7 @@ struct StationRowView: View {
 
 #Preview {
     NavigationStack {
-        StationListView(selectedStation: .constant(Station.allStations[0]))
+        StationListView(selectedStation: .constant(PATCOProvider().stations[0]))
             .environmentObject(ScheduleService())
     }
 }

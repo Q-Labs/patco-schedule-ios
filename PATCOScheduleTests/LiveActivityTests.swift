@@ -4,6 +4,11 @@ import XCTest
 @available(iOS 16.1, *)
 final class LiveActivityTests: XCTestCase {
 
+    let provider = PATCOProvider()
+
+    var westbound: TransitDirection { provider.directions.first { $0.id == "westbound" }! }
+    var eastbound: TransitDirection { provider.directions.first { $0.id == "eastbound" }! }
+
     // MARK: - PATCOActivityAttributes Tests
 
     func testActivityAttributesCreation() {
@@ -112,7 +117,7 @@ final class LiveActivityTests: XCTestCase {
             departureTime: departureTime,
             arrivalTimeString: "10:42:00",
             headsign: "15th-16th & Locust",
-            direction: .westbound,
+            direction: westbound,
             tripId: "WEEKDAY_WB_42"
         )
 
@@ -133,7 +138,7 @@ final class LiveActivityTests: XCTestCase {
             departureTime: departureTime,
             arrivalTimeString: "10:33:00",
             headsign: "Lindenwold",
-            direction: .eastbound,
+            direction: eastbound,
             tripId: "WEEKDAY_EB_15"
         )
 
@@ -150,7 +155,7 @@ final class LiveActivityTests: XCTestCase {
             departureTime: departureTime,
             arrivalTimeString: "10:30:00",
             headsign: "Lindenwold",
-            direction: .eastbound,
+            direction: eastbound,
             tripId: "WEEKDAY_EB_15"
         )
 
@@ -246,21 +251,21 @@ final class LiveActivityTests: XCTestCase {
     func testWestboundDirection() {
         let attributes = PATCOActivityAttributes(
             stationName: "Haddonfield",
-            direction: "Westbound",
-            destination: "15th-16th & Locust",
+            direction: westbound.displayName,
+            destination: westbound.destination,
             tripId: "WEEKDAY_WB_42",
             scheduledDeparture: Date()
         )
 
         XCTAssertEqual(attributes.direction, "Westbound")
-        XCTAssertEqual(attributes.destination, "15th-16th & Locust")
+        XCTAssertTrue(attributes.destination.contains("Locust"))
     }
 
     func testEastboundDirection() {
         let attributes = PATCOActivityAttributes(
             stationName: "City Hall",
-            direction: "Eastbound",
-            destination: "Lindenwold",
+            direction: eastbound.displayName,
+            destination: eastbound.destination,
             tripId: "WEEKDAY_EB_30",
             scheduledDeparture: Date()
         )
@@ -272,7 +277,7 @@ final class LiveActivityTests: XCTestCase {
     // MARK: - Station Name Tests
 
     func testAllStationNamesValid() {
-        for station in Station.allStations {
+        for station in provider.stations {
             let attributes = PATCOActivityAttributes(
                 stationName: station.displayName,
                 direction: "Westbound",

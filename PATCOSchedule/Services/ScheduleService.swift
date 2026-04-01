@@ -67,9 +67,11 @@ class ScheduleService: ObservableObject {
         scheduleData.isLoaded
     }
 
-    private let parser = GTFSParser()
-    private let pdfParser = PDFScheduleParser()
-    private let dataSourceManager = DataSourceManager()
+    let provider: any TransitProvider
+
+    private let parser: GTFSParser
+    private let pdfParser: PDFScheduleParser
+    private let dataSourceManager: DataSourceManager
     private var stopIdMapping: [String: String] = [:]
     private var updateCheckTimer: Timer?
 
@@ -77,7 +79,31 @@ class ScheduleService: ObservableObject {
     private let maxRetryAttempts = 2
     private var currentRetryAttempt = 0
 
-    init() {
+    init(provider: any TransitProvider = PATCOProvider()) {
+        self.provider = provider
+
+        let gtfsParser = GTFSParser(gtfsURL: provider.gtfsURL)
+        let pdfConfig = PDFParserConfig(
+            scheduleURLs: provider.pdfScheduleURLs,
+            schedulePage: provider.schedulePage,
+            scheduleDomain: provider.scheduleDomain,
+            directionPatterns: provider.pdfDirectionPatterns,
+            stops: provider.pdfBundledStops,
+            cumulativeTravelTimes: provider.pdfCumulativeTravelTimes,
+            routeId: provider.pdfRouteId,
+            westboundHeadsign: provider.pdfWestboundHeadsign,
+            eastboundHeadsign: provider.pdfEastboundHeadsign
+        )
+        let pdfParser = PDFScheduleParser(config: pdfConfig)
+
+        self.parser = gtfsParser
+        self.pdfParser = pdfParser
+        self.dataSourceManager = DataSourceManager(
+            gtfsParser: gtfsParser,
+            pdfParser: pdfParser,
+            bundledDataGenerator: provider.generateBundledData
+        )
+
         // Immediately load bundled data on init
         loadBundledSchedule()
 
@@ -136,7 +162,7 @@ class ScheduleService: ObservableObject {
         return dataSourceManager.specialSchedules
     }
 
-    func getUpcomingTrains(for station: Station, direction: TrainDirection, limit: Int = 5) -> [UpcomingTrain] {
+    func getUpcomingTrains(for station: Station, direction: TransitDirection, limit: Int = 5) -> [UpcomingTrain] {
         guard scheduleData.isLoaded else { return [] }
 
         let now = Date()
@@ -195,7 +221,7 @@ class ScheduleService: ObservableObject {
         return Array(upcomingTrains.prefix(limit))
     }
 
-    func getNextTrain(for station: Station, direction: TrainDirection) -> UpcomingTrain? {
+    func getNextTrain(for station: Station, direction: TransitDirection) -> UpcomingTrain? {
         return getUpcomingTrains(for: station, direction: direction, limit: 1).first
     }
 
@@ -224,8 +250,7 @@ class ScheduleService: ObservableObject {
     private func loadBundledSchedule() {
         loadState = .loading
 
-        // Generate schedule from bundled data
-        scheduleData = BundledScheduleData.generateScheduleData()
+        scheduleData = provider.generateBundledData()
         buildStopIdMapping()
 
         if scheduleData.isLoaded {
@@ -356,7 +381,7 @@ class ScheduleService: ObservableObject {
         stopIdMapping.removeAll()
 
         for stop in scheduleData.stops {
-            if let station = Station.findStation(matching: stop.name) {
+            if let station = provider.findStation(matching: stop.name) {
                 stopIdMapping[stop.id] = station.id
             }
         }
@@ -396,31 +421,8 @@ class ScheduleService: ObservableObject {
         return s1.contains(s2) || s2.contains(s1)
     }
 
-    private func matchesDirection(trip: GTFSTrip, direction: TrainDirection) -> Bool {
-        if let headsign = trip.headsign?.lowercased() {
-            switch direction {
-            case .eastbound:
-                return headsign.contains("lindenwold") ||
-                       headsign.contains("eastbound") ||
-                       trip.directionId == 1
-            case .westbound:
-                return headsign.contains("15") ||
-                       headsign.contains("16") ||
-                       headsign.contains("locust") ||
-                       headsign.contains("westbound") ||
-                       headsign.contains("philadelphia") ||
-                       trip.directionId == 0
-            }
-        }
-
-        if let directionId = trip.directionId {
-            switch direction {
-            case .eastbound: return directionId == 1
-            case .westbound: return directionId == 0
-            }
-        }
-
-        return true
+    private func matchesDirection(trip: GTFSTrip, direction: TransitDirection) -> Bool {
+        provider.matchesDirection(trip: trip, direction: direction)
     }
 
     private func getActiveServiceIds(for dateString: String, weekday: Int) -> Set<String> {

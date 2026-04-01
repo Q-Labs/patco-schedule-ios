@@ -29,7 +29,7 @@ struct ContentView: View {
 
                 // Restore saved station
                 if !savedStationId.isEmpty {
-                    selectedStation = Station.allStations.first { $0.id == savedStationId }
+                    selectedStation = scheduleService.provider.stations.first { $0.id == savedStationId }
                 }
             }
             .onChange(of: selectedStation) { _, newStation in
@@ -43,6 +43,7 @@ struct ContentView: View {
 
 struct WelcomeView: View {
     let onSelectStation: () -> Void
+    @EnvironmentObject var scheduleService: ScheduleService
 
     var body: some View {
         VStack(spacing: 24) {
@@ -52,11 +53,11 @@ struct WelcomeView: View {
                 .font(.system(size: 80))
                 .foregroundColor(.blue)
 
-            Text("PATCO Schedule")
+            Text(scheduleService.provider.displayName)
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
-            Text("Get real-time train schedules for the PATCO Speedline between South Jersey and Philadelphia")
+            Text(scheduleService.provider.tagline)
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -178,7 +179,7 @@ struct ScheduleLoadingView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
 
-                Text("Fetching the latest PATCO train times...")
+                Text("Fetching the latest train times...")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -298,19 +299,15 @@ struct AllStationsView: View {
     @EnvironmentObject var scheduleService: ScheduleService
 
     var body: some View {
+        let provider = scheduleService.provider
         List {
-            Section("New Jersey") {
-                ForEach(Station.allStations.filter { $0.order <= 8 }) { station in
-                    NavigationLink(destination: StationDetailView(station: station)) {
-                        StationQuickView(station: station)
-                    }
-                }
-            }
-
-            Section("Philadelphia") {
-                ForEach(Station.allStations.filter { $0.order > 8 }) { station in
-                    NavigationLink(destination: StationDetailView(station: station)) {
-                        StationQuickView(station: station)
+            ForEach(provider.stationGroups) { group in
+                let groupStations = provider.stations.filter { group.stationIds.contains($0.id) }
+                Section(group.name) {
+                    ForEach(groupStations) { station in
+                        NavigationLink(destination: StationDetailView(station: station)) {
+                            StationQuickView(station: station)
+                        }
                     }
                 }
             }
@@ -323,54 +320,30 @@ struct StationQuickView: View {
     let station: Station
     @EnvironmentObject var scheduleService: ScheduleService
 
-    var nextWestbound: UpcomingTrain? {
-        scheduleService.getNextTrain(for: station, direction: .westbound)
-    }
-
-    var nextEastbound: UpcomingTrain? {
-        scheduleService.getNextTrain(for: station, direction: .eastbound)
-    }
-
     var body: some View {
+        let provider = scheduleService.provider
         VStack(alignment: .leading, spacing: 8) {
             Text(station.displayName)
                 .font(.headline)
 
             HStack(spacing: 16) {
-                // To Philly (Westbound)
-                if station.order < 12 {
-                    HStack(spacing: 4) {
-                        Text("Philly")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.purple)
-                        if let train = nextWestbound {
-                            Text("\(train.minutesUntilDeparture)m")
+                ForEach(provider.directions) { direction in
+                    if !provider.isTerminus(station: station, direction: direction) {
+                        let nextTrain = scheduleService.getNextTrain(for: station, direction: direction)
+                        HStack(spacing: 4) {
+                            Text(direction.shortLabel)
                                 .font(.caption)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("--")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-
-                // To Lindenwold (Eastbound)
-                if station.order > 0 {
-                    HStack(spacing: 4) {
-                        Text("Lindenwold")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.green)
-                        if let train = nextEastbound {
-                            Text("\(train.minutesUntilDeparture)m")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("--")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .fontWeight(.medium)
+                                .foregroundColor(direction.color)
+                            if let train = nextTrain {
+                                Text("\(train.minutesUntilDeparture)m")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("--")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                 }
@@ -383,71 +356,51 @@ struct StationQuickView: View {
 struct StationPickerSheet: View {
     @Binding var selectedStation: Station?
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var scheduleService: ScheduleService
     @State private var searchText = ""
 
-    var filteredStations: [Station] {
+    func filteredStations(for group: StationGroup) -> [Station] {
+        let groupStations = scheduleService.provider.stations.filter { group.stationIds.contains($0.id) }
         if searchText.isEmpty {
-            return Station.allStations
+            return groupStations
         }
-        return Station.allStations.filter {
+        return groupStations.filter {
             $0.name.localizedCaseInsensitiveContains(searchText) ||
             $0.displayName.localizedCaseInsensitiveContains(searchText)
         }
     }
 
     var body: some View {
+        let provider = scheduleService.provider
         NavigationStack {
             List {
-                Section("New Jersey Stations") {
-                    ForEach(filteredStations.filter { $0.order <= 8 }) { station in
-                        Button {
-                            selectedStation = station
-                            dismiss()
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(station.displayName)
-                                        .foregroundColor(.primary)
-                                    if station.displayName != station.name {
-                                        Text(station.name)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                ForEach(provider.stationGroups) { group in
+                    let stations = filteredStations(for: group)
+                    if !stations.isEmpty {
+                        Section(group.name) {
+                            ForEach(stations) { station in
+                                Button {
+                                    selectedStation = station
+                                    dismiss()
+                                } label: {
+                                    HStack {
+                                        VStack(alignment: .leading) {
+                                            Text(station.displayName)
+                                                .foregroundColor(.primary)
+                                            if station.displayName != station.name {
+                                                Text(station.name)
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+
+                                        Spacer()
+
+                                        if selectedStation?.id == station.id {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.blue)
+                                        }
                                     }
-                                }
-
-                                Spacer()
-
-                                if selectedStation?.id == station.id {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Section("Philadelphia Stations") {
-                    ForEach(filteredStations.filter { $0.order > 8 }) { station in
-                        Button {
-                            selectedStation = station
-                            dismiss()
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(station.displayName)
-                                        .foregroundColor(.primary)
-                                    if station.displayName != station.name {
-                                        Text(station.name)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-
-                                Spacer()
-
-                                if selectedStation?.id == station.id {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
                                 }
                             }
                         }

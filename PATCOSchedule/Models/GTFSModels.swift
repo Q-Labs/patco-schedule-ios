@@ -113,26 +113,12 @@ struct GTFSCalendarDate: Codable {
 
 // MARK: - App-Specific Models
 
-enum TrainDirection: String, CaseIterable, Identifiable {
-    case eastbound = "Eastbound"
-    case westbound = "Westbound"
-
-    var id: String { rawValue }
-
-    var destination: String {
-        switch self {
-        case .eastbound: return "Lindenwold"
-        case .westbound: return "15th-16th & Locust"
-        }
-    }
-}
-
 struct UpcomingTrain: Identifiable {
     let id = UUID()
     let departureTime: Date
     let arrivalTimeString: String
     let headsign: String
-    let direction: TrainDirection
+    let direction: TransitDirection
     let tripId: String
 
     var minutesUntilDeparture: Int {
@@ -152,32 +138,6 @@ struct Station: Identifiable, Hashable {
     let name: String
     let displayName: String
     let order: Int
-
-    static let allStations: [Station] = [
-        Station(id: "LINDENWOLD", name: "Lindenwold", displayName: "Lindenwold", order: 0),
-        Station(id: "ASHLAND", name: "Ashland", displayName: "Ashland", order: 1),
-        Station(id: "WOODCREST", name: "Woodcrest", displayName: "Woodcrest", order: 2),
-        Station(id: "HADDONFIELD", name: "Haddonfield", displayName: "Haddonfield", order: 3),
-        Station(id: "WESTMONT", name: "Westmont", displayName: "Westmont", order: 4),
-        Station(id: "COLLINGSWOOD", name: "Collingswood", displayName: "Collingswood", order: 5),
-        Station(id: "FERRY", name: "Ferry Avenue", displayName: "Ferry Ave", order: 6),
-        Station(id: "BROADWAY", name: "Broadway", displayName: "Broadway", order: 7),
-        Station(id: "CITYHALL", name: "City Hall", displayName: "City Hall", order: 8),
-        Station(id: "FRANKLIN", name: "Franklin Square", displayName: "Franklin Square", order: 9),
-        Station(id: "8TH", name: "8th and Market", displayName: "8th & Market", order: 10),
-        Station(id: "9-10TH", name: "9-10th and Locust", displayName: "9th-10th & Locust", order: 11),
-        Station(id: "12-13TH", name: "12-13th and Locust", displayName: "12th-13th & Locust", order: 12),
-        Station(id: "15-16TH", name: "15-16th and Locust", displayName: "15th-16th & Locust", order: 13)
-    ]
-
-    static func findStation(matching stopName: String) -> Station? {
-        let normalizedName = stopName.lowercased()
-        return allStations.first { station in
-            normalizedName.contains(station.name.lowercased()) ||
-            station.name.lowercased().contains(normalizedName) ||
-            normalizedName.contains(station.id.lowercased())
-        }
-    }
 }
 
 // MARK: - Schedule Data Container

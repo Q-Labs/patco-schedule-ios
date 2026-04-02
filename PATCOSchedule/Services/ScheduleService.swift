@@ -79,7 +79,7 @@ class ScheduleService: ObservableObject {
     private let maxRetryAttempts = 2
     private var currentRetryAttempt = 0
 
-    init(provider: any TransitProvider = PATCOProvider()) {
+    init(provider: any TransitProvider) {
         self.provider = provider
 
         let gtfsParser = GTFSParser(gtfsURL: provider.gtfsURL)

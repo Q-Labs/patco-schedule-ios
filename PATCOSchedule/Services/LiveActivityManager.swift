@@ -4,7 +4,7 @@ import ActivityKit
 // MARK: - ContentState Helper Extension
 
 @available(iOS 16.1, *)
-extension PATCOActivityAttributes.ContentState {
+extension TransitActivityAttributes.ContentState {
     /// Create content state from an UpcomingTrain
     static func from(train: UpcomingTrain) -> Self {
         let formatter = DateFormatter()
@@ -38,7 +38,7 @@ extension PATCOActivityAttributes.ContentState {
 class LiveActivityManager: ObservableObject {
 
     /// Current running activity
-    @Published var currentActivity: Activity<PATCOActivityAttributes>?
+    @Published var currentActivity: Activity<TransitActivityAttributes>?
 
     /// Whether Live Activities are supported on this device
     @Published var isSupported: Bool = false
@@ -101,7 +101,7 @@ class LiveActivityManager: ObservableObject {
             }
         }
 
-        let attributes = PATCOActivityAttributes(
+        let attributes = TransitActivityAttributes(
             stationName: station.displayName,
             direction: direction.displayName,
             destination: train.headsign,
@@ -109,7 +109,7 @@ class LiveActivityManager: ObservableObject {
             scheduledDeparture: train.departureTime
         )
 
-        let initialState = PATCOActivityAttributes.ContentState.from(train: train)
+        let initialState = TransitActivityAttributes.ContentState.from(train: train)
 
         do {
             let activity = try Activity.request(
@@ -160,7 +160,7 @@ class LiveActivityManager: ObservableObject {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
 
-        let newState = PATCOActivityAttributes.ContentState(
+        let newState = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: minutes,
             secondsUntilDeparture: totalSeconds,
             departureTimeString: formatter.string(from: trackedDepartureTime),
@@ -188,7 +188,7 @@ class LiveActivityManager: ObservableObject {
         updateTimer = nil
 
         // Create final state showing departed
-        let finalState = PATCOActivityAttributes.ContentState(
+        let finalState = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 0,
             secondsUntilDeparture: 0,
             departureTimeString: "--",
@@ -245,8 +245,8 @@ class LiveActivityManager: ObservableObject {
 
     /// End all active Live Activities (useful on app termination)
     func endAllActivities() async {
-        for activity in Activity<PATCOActivityAttributes>.activities {
-            let finalState = PATCOActivityAttributes.ContentState(
+        for activity in Activity<TransitActivityAttributes>.activities {
+            let finalState = TransitActivityAttributes.ContentState(
                 minutesUntilDeparture: 0,
                 secondsUntilDeparture: 0,
                 departureTimeString: "--",

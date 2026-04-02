@@ -1,12 +1,12 @@
 import Foundation
 import ActivityKit
 
-/// Defines the data shown in the PATCO Live Activity
+/// Defines the data shown in a transit Live Activity
 @available(iOS 16.1, *)
-public struct PATCOActivityAttributes: ActivityAttributes {
+public struct TransitActivityAttributes: ActivityAttributes {
 
     /// Dynamic data that updates during the activity
-    public typealias ContentState = PATCOActivityContentState
+    public typealias ContentState = TransitActivityContentState
 
     /// Station name
     public var stationName: String
@@ -32,9 +32,9 @@ public struct PATCOActivityAttributes: ActivityAttributes {
     }
 }
 
-/// Content state for the PATCO Live Activity (dynamic data that updates)
+/// Content state for a transit Live Activity (dynamic data that updates)
 @available(iOS 16.1, *)
-public struct PATCOActivityContentState: Codable, Hashable {
+public struct TransitActivityContentState: Codable, Hashable {
     /// Minutes until departure (updates as time passes)
     public var minutesUntilDeparture: Int
 

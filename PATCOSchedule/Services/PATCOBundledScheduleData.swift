@@ -2,7 +2,7 @@ import Foundation
 
 /// Bundled PATCO schedule data based on published timetables
 /// This serves as the primary data source, with GTFS updates fetched periodically
-struct BundledScheduleData {
+struct PATCOBundledScheduleData {
 
     // MARK: - Station Data
 

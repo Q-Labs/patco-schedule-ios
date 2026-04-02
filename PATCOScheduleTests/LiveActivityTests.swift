@@ -9,12 +9,12 @@ final class LiveActivityTests: XCTestCase {
     var westbound: TransitDirection { provider.directions.first { $0.id == "westbound" }! }
     var eastbound: TransitDirection { provider.directions.first { $0.id == "eastbound" }! }
 
-    // MARK: - PATCOActivityAttributes Tests
+    // MARK: - TransitActivityAttributes Tests
 
     func testActivityAttributesCreation() {
         let scheduledDeparture = Date().addingTimeInterval(720) // 12 minutes from now
 
-        let attributes = PATCOActivityAttributes(
+        let attributes = TransitActivityAttributes(
             stationName: "Haddonfield",
             direction: "Westbound",
             destination: "15th-16th & Locust",
@@ -30,7 +30,7 @@ final class LiveActivityTests: XCTestCase {
     }
 
     func testContentStateCreation() {
-        let state = PATCOActivityAttributes.ContentState(
+        let state = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 12,
             secondsUntilDeparture: 0,
             departureTimeString: "10:42 AM",
@@ -48,7 +48,7 @@ final class LiveActivityTests: XCTestCase {
     }
 
     func testContentStateArrivingSoon() {
-        let stateNotSoon = PATCOActivityAttributes.ContentState(
+        let stateNotSoon = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 10,
             secondsUntilDeparture: 0,
             departureTimeString: "10:40 AM",
@@ -59,7 +59,7 @@ final class LiveActivityTests: XCTestCase {
         )
         XCTAssertFalse(stateNotSoon.isArrivingSoon)
 
-        let stateSoon = PATCOActivityAttributes.ContentState(
+        let stateSoon = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 3,
             secondsUntilDeparture: 0,
             departureTimeString: "10:33 AM",
@@ -73,7 +73,7 @@ final class LiveActivityTests: XCTestCase {
 
     func testContentStateShowSeconds() {
         // Under 1 minute - should show seconds
-        let stateUnder1Min = PATCOActivityAttributes.ContentState(
+        let stateUnder1Min = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 0,
             secondsUntilDeparture: 45,
             departureTimeString: "10:30 AM",
@@ -86,7 +86,7 @@ final class LiveActivityTests: XCTestCase {
         XCTAssertEqual(stateUnder1Min.secondsUntilDeparture, 45)
 
         // Over 1 minute - should not show seconds
-        let stateOver1Min = PATCOActivityAttributes.ContentState(
+        let stateOver1Min = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 5,
             secondsUntilDeparture: 0,
             departureTimeString: "10:35 AM",
@@ -99,7 +99,7 @@ final class LiveActivityTests: XCTestCase {
     }
 
     func testContentStateHasDeparted() {
-        let departedState = PATCOActivityAttributes.ContentState(
+        let departedState = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 0,
             secondsUntilDeparture: 0,
             departureTimeString: "10:30 AM",
@@ -121,7 +121,7 @@ final class LiveActivityTests: XCTestCase {
             tripId: "WEEKDAY_WB_42"
         )
 
-        let state = PATCOActivityAttributes.ContentState.from(train: train)
+        let state = TransitActivityAttributes.ContentState.from(train: train)
 
         // Minutes should be approximately 12 (allowing for small time differences)
         XCTAssertGreaterThanOrEqual(state.minutesUntilDeparture, 11)
@@ -142,7 +142,7 @@ final class LiveActivityTests: XCTestCase {
             tripId: "WEEKDAY_EB_15"
         )
 
-        let state = PATCOActivityAttributes.ContentState.from(train: train)
+        let state = TransitActivityAttributes.ContentState.from(train: train)
 
         XCTAssertLessThanOrEqual(state.minutesUntilDeparture, 5)
         XCTAssertTrue(state.isArrivingSoon)
@@ -159,7 +159,7 @@ final class LiveActivityTests: XCTestCase {
             tripId: "WEEKDAY_EB_15"
         )
 
-        let state = PATCOActivityAttributes.ContentState.from(train: train)
+        let state = TransitActivityAttributes.ContentState.from(train: train)
 
         XCTAssertEqual(state.minutesUntilDeparture, 0)
         XCTAssertTrue(state.showSeconds)
@@ -170,7 +170,7 @@ final class LiveActivityTests: XCTestCase {
     // MARK: - ContentState Codable Tests
 
     func testContentStateEncodingDecoding() throws {
-        let originalState = PATCOActivityAttributes.ContentState(
+        let originalState = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 8,
             secondsUntilDeparture: 30,
             departureTimeString: "10:38 AM",
@@ -184,7 +184,7 @@ final class LiveActivityTests: XCTestCase {
         let data = try encoder.encode(originalState)
 
         let decoder = JSONDecoder()
-        let decodedState = try decoder.decode(PATCOActivityAttributes.ContentState.self, from: data)
+        let decodedState = try decoder.decode(TransitActivityAttributes.ContentState.self, from: data)
 
         XCTAssertEqual(decodedState.minutesUntilDeparture, originalState.minutesUntilDeparture)
         XCTAssertEqual(decodedState.secondsUntilDeparture, originalState.secondsUntilDeparture)
@@ -198,7 +198,7 @@ final class LiveActivityTests: XCTestCase {
 
     func testContentStateHashable() {
         let date = Date()
-        let state1 = PATCOActivityAttributes.ContentState(
+        let state1 = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 12,
             secondsUntilDeparture: 0,
             departureTimeString: "10:42 AM",
@@ -208,7 +208,7 @@ final class LiveActivityTests: XCTestCase {
             lastUpdated: date
         )
 
-        let state2 = PATCOActivityAttributes.ContentState(
+        let state2 = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 12,
             secondsUntilDeparture: 0,
             departureTimeString: "10:42 AM",
@@ -223,7 +223,7 @@ final class LiveActivityTests: XCTestCase {
     }
 
     func testContentStateDifferentValues() {
-        let state1 = PATCOActivityAttributes.ContentState(
+        let state1 = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 12,
             secondsUntilDeparture: 0,
             departureTimeString: "10:42 AM",
@@ -233,7 +233,7 @@ final class LiveActivityTests: XCTestCase {
             lastUpdated: Date()
         )
 
-        let state2 = PATCOActivityAttributes.ContentState(
+        let state2 = TransitActivityAttributes.ContentState(
             minutesUntilDeparture: 5,
             secondsUntilDeparture: 0,
             departureTimeString: "10:35 AM",
@@ -249,7 +249,7 @@ final class LiveActivityTests: XCTestCase {
     // MARK: - Direction Tests for Live Activity
 
     func testWestboundDirection() {
-        let attributes = PATCOActivityAttributes(
+        let attributes = TransitActivityAttributes(
             stationName: "Haddonfield",
             direction: westbound.displayName,
             destination: westbound.destination,
@@ -262,7 +262,7 @@ final class LiveActivityTests: XCTestCase {
     }
 
     func testEastboundDirection() {
-        let attributes = PATCOActivityAttributes(
+        let attributes = TransitActivityAttributes(
             stationName: "City Hall",
             direction: eastbound.displayName,
             destination: eastbound.destination,
@@ -278,7 +278,7 @@ final class LiveActivityTests: XCTestCase {
 
     func testAllStationNamesValid() {
         for station in provider.stations {
-            let attributes = PATCOActivityAttributes(
+            let attributes = TransitActivityAttributes(
                 stationName: station.displayName,
                 direction: "Westbound",
                 destination: "15th-16th & Locust",
@@ -320,7 +320,7 @@ final class LiveActivityManagerTests: XCTestCase {
     @MainActor
     func testSetScheduleService() {
         let manager = LiveActivityManager()
-        let scheduleService = ScheduleService()
+        let scheduleService = ScheduleService(provider: PATCOProvider())
 
         // Should not crash
         manager.setScheduleService(scheduleService)

@@ -11,7 +11,7 @@ final class ScheduleServiceTests: XCTestCase {
     var eastbound: TransitDirection { provider.directions.first { $0.id == "eastbound" }! }
 
     override func setUp() async throws {
-        scheduleService = ScheduleService()
+        scheduleService = ScheduleService(provider: PATCOProvider())
     }
 
     override func tearDown() async throws {

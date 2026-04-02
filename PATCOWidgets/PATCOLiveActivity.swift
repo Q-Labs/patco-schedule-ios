@@ -5,7 +5,7 @@ import SwiftUI
 @available(iOS 16.1, *)
 struct PATCOLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: PATCOActivityAttributes.self) { context in
+        ActivityConfiguration(for: TransitActivityAttributes.self) { context in
             // Lock Screen / Banner UI
             LockScreenView(context: context)
 
@@ -100,7 +100,7 @@ struct PATCOLiveActivity: Widget {
 
 @available(iOS 16.1, *)
 struct LockScreenView: View {
-    let context: ActivityViewContext<PATCOActivityAttributes>
+    let context: ActivityViewContext<TransitActivityAttributes>
 
     var body: some View {
         HStack {
@@ -168,7 +168,7 @@ struct LockScreenView: View {
 // MARK: - Previews
 
 @available(iOS 16.1, *)
-#Preview("Lock Screen - Minutes", as: .content, using: PATCOActivityAttributes(
+#Preview("Lock Screen - Minutes", as: .content, using: TransitActivityAttributes(
     stationName: "Haddonfield",
     direction: "Westbound",
     destination: "15th-16th & Locust",
@@ -177,7 +177,7 @@ struct LockScreenView: View {
 )) {
     PATCOLiveActivity()
 } contentStates: {
-    PATCOActivityAttributes.ContentState(
+    TransitActivityAttributes.ContentState(
         minutesUntilDeparture: 12,
         secondsUntilDeparture: 0,
         departureTimeString: "10:42 AM",
@@ -186,7 +186,7 @@ struct LockScreenView: View {
         hasDeparted: false,
         lastUpdated: Date()
     )
-    PATCOActivityAttributes.ContentState(
+    TransitActivityAttributes.ContentState(
         minutesUntilDeparture: 3,
         secondsUntilDeparture: 0,
         departureTimeString: "10:33 AM",
@@ -198,7 +198,7 @@ struct LockScreenView: View {
 }
 
 @available(iOS 16.1, *)
-#Preview("Lock Screen - Seconds", as: .content, using: PATCOActivityAttributes(
+#Preview("Lock Screen - Seconds", as: .content, using: TransitActivityAttributes(
     stationName: "Haddonfield",
     direction: "Westbound",
     destination: "15th-16th & Locust",
@@ -207,7 +207,7 @@ struct LockScreenView: View {
 )) {
     PATCOLiveActivity()
 } contentStates: {
-    PATCOActivityAttributes.ContentState(
+    TransitActivityAttributes.ContentState(
         minutesUntilDeparture: 0,
         secondsUntilDeparture: 45,
         departureTimeString: "10:30 AM",
@@ -216,7 +216,7 @@ struct LockScreenView: View {
         hasDeparted: false,
         lastUpdated: Date()
     )
-    PATCOActivityAttributes.ContentState(
+    TransitActivityAttributes.ContentState(
         minutesUntilDeparture: 0,
         secondsUntilDeparture: 10,
         departureTimeString: "10:30 AM",

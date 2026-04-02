@@ -262,7 +262,7 @@ class PDFScheduleParser {
 
         // Use provider-supplied stops as our reference
         scheduleData.stops = config.stops
-        scheduleData.calendars = BundledScheduleData.calendars
+        scheduleData.calendars = PATCOBundledScheduleData.calendars
 
         // Extract departure times from the text
         let departureTimes = extractDepartureTimes(from: text)

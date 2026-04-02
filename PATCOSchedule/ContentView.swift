@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var scheduleService = ScheduleService()
+    @StateObject private var scheduleService = ScheduleService(provider: PATCOProvider())
     @State private var selectedStation: Station?
     @State private var showingStationPicker = false
     @AppStorage("savedStationId") private var savedStationId: String = ""

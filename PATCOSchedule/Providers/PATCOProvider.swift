@@ -122,8 +122,8 @@ struct PATCOProvider: TransitProvider {
         "eastbound": ["to lindenwold", "eastbound", "to new jersey"]
     ]
 
-    var pdfBundledStops: [GTFSStop] { BundledScheduleData.stops }
-    var pdfCumulativeTravelTimes: [Int] { BundledScheduleData.cumulativeTravelTimes }
+    var pdfBundledStops: [GTFSStop] { PATCOBundledScheduleData.stops }
+    var pdfCumulativeTravelTimes: [Int] { PATCOBundledScheduleData.cumulativeTravelTimes }
     let pdfRouteId = "PATCO"
     let pdfWestboundHeadsign = "15th-16th & Locust"
     let pdfEastboundHeadsign = "Lindenwold"
@@ -131,6 +131,6 @@ struct PATCOProvider: TransitProvider {
     // MARK: - Bundled Fallback
 
     func generateBundledData() -> ScheduleData {
-        BundledScheduleData.generateScheduleData()
+        PATCOBundledScheduleData.generateScheduleData()
     }
 }

@@ -55,7 +55,7 @@ final class IntegrationTests: XCTestCase {
     // MARK: - Trip Consistency Tests
 
     func testTripStopTimesFormValidJourney() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         // Pick a random westbound trip
         guard let westboundTrip = data.trips.first(where: { $0.directionId == 0 }) else {
@@ -87,7 +87,7 @@ final class IntegrationTests: XCTestCase {
     }
 
     func testEastboundTripStopOrder() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         guard let eastboundTrip = data.trips.first(where: { $0.directionId == 1 }) else {
             XCTFail("Should have eastbound trips")
@@ -108,7 +108,7 @@ final class IntegrationTests: XCTestCase {
     // MARK: - Service Calendar Integration Tests
 
     func testWeekdayServiceHasMoreTrips() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         let weekdayTrips = data.trips.filter { $0.serviceId == "WEEKDAY" }
         let saturdayTrips = data.trips.filter { $0.serviceId == "SATURDAY" }
@@ -118,7 +118,7 @@ final class IntegrationTests: XCTestCase {
     }
 
     func testAllServicesHaveBothDirections() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         for serviceId in ["WEEKDAY", "SATURDAY", "SUNDAY"] {
             let serviceTrips = data.trips.filter { $0.serviceId == serviceId }
@@ -152,7 +152,7 @@ final class IntegrationTests: XCTestCase {
     // MARK: - Station Coverage Tests
 
     func testAllStationsHaveMatchingStops() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
         let stopIds = Set(data.stops.map { $0.id })
 
         for station in provider.stations {
@@ -162,7 +162,7 @@ final class IntegrationTests: XCTestCase {
     }
 
     func testAllStationsReachableFromBothEnds() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         // Check westbound trips cover all stations
         guard let westboundTrip = data.trips.first(where: { $0.directionId == 0 }) else {
@@ -258,7 +258,7 @@ final class IntegrationTests: XCTestCase {
     // MARK: - Data Integrity Tests
 
     func testNoOrphanedStopTimes() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         let tripIds = Set(data.trips.map { $0.id })
         let stopIds = Set(data.stops.map { $0.id })
@@ -272,7 +272,7 @@ final class IntegrationTests: XCTestCase {
     }
 
     func testAllTripsHaveStopTimes() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         let tripsWithStopTimes = Set(data.stopTimes.map { $0.tripId })
 

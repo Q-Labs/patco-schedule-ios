@@ -1,23 +1,23 @@
 import XCTest
 @testable import PATCOSchedule
 
-final class BundledScheduleDataTests: XCTestCase {
+final class PATCOBundledScheduleDataTests: XCTestCase {
 
     // MARK: - Station Data Tests
 
     func testBundledStopsCount() {
-        XCTAssertEqual(BundledScheduleData.stops.count, 14)
+        XCTAssertEqual(PATCOBundledScheduleData.stops.count, 14)
     }
 
     func testBundledStopsHaveCoordinates() {
-        for stop in BundledScheduleData.stops {
+        for stop in PATCOBundledScheduleData.stops {
             XCTAssertNotNil(stop.latitude, "Stop \(stop.name) should have latitude")
             XCTAssertNotNil(stop.longitude, "Stop \(stop.name) should have longitude")
         }
     }
 
     func testBundledStopsOrder() {
-        let stops = BundledScheduleData.stops
+        let stops = PATCOBundledScheduleData.stops
         XCTAssertEqual(stops[0].id, "LINDENWOLD")
         XCTAssertEqual(stops[9].id, "FRANKLIN")
         XCTAssertEqual(stops[13].id, "15-16TH")
@@ -26,8 +26,8 @@ final class BundledScheduleDataTests: XCTestCase {
     func testBundledStopsGeographicallyReasonable() {
         // PATCO runs roughly NW to SE, so latitudes should generally increase
         // from Lindenwold (south) to Philly stations (north)
-        let lindenwold = BundledScheduleData.stops.first { $0.id == "LINDENWOLD" }!
-        let fifteenthSt = BundledScheduleData.stops.first { $0.id == "15-16TH" }!
+        let lindenwold = PATCOBundledScheduleData.stops.first { $0.id == "LINDENWOLD" }!
+        let fifteenthSt = PATCOBundledScheduleData.stops.first { $0.id == "15-16TH" }!
 
         XCTAssertLessThan(lindenwold.latitude!, fifteenthSt.latitude!)
     }
@@ -35,17 +35,17 @@ final class BundledScheduleDataTests: XCTestCase {
     // MARK: - Travel Times Tests
 
     func testTravelTimesCount() {
-        XCTAssertEqual(BundledScheduleData.travelTimesMinutes.count, 14)
+        XCTAssertEqual(PATCOBundledScheduleData.travelTimesMinutes.count, 14)
     }
 
     func testTravelTimesArePositive() {
-        for (index, time) in BundledScheduleData.travelTimesMinutes.enumerated() {
+        for (index, time) in PATCOBundledScheduleData.travelTimesMinutes.enumerated() {
             XCTAssertGreaterThanOrEqual(time, 0, "Travel time at index \(index) should be non-negative")
         }
     }
 
     func testCumulativeTravelTimesIncreasing() {
-        let cumulative = BundledScheduleData.cumulativeTravelTimes
+        let cumulative = PATCOBundledScheduleData.cumulativeTravelTimes
         for i in 1..<cumulative.count {
             XCTAssertGreaterThanOrEqual(cumulative[i], cumulative[i-1],
                 "Cumulative times should be non-decreasing")
@@ -54,7 +54,7 @@ final class BundledScheduleDataTests: XCTestCase {
 
     func testTotalTravelTimeReasonable() {
         // Total travel time Lindenwold to 15-16th should be around 25-30 minutes
-        let totalTime = BundledScheduleData.cumulativeTravelTimes.last!
+        let totalTime = PATCOBundledScheduleData.cumulativeTravelTimes.last!
         XCTAssertGreaterThanOrEqual(totalTime, 20)
         XCTAssertLessThanOrEqual(totalTime, 35)
     }
@@ -62,18 +62,18 @@ final class BundledScheduleDataTests: XCTestCase {
     // MARK: - Calendar Tests
 
     func testCalendarsCount() {
-        XCTAssertEqual(BundledScheduleData.calendars.count, 3)
+        XCTAssertEqual(PATCOBundledScheduleData.calendars.count, 3)
     }
 
     func testCalendarServiceIds() {
-        let serviceIds = Set(BundledScheduleData.calendars.map { $0.serviceId })
+        let serviceIds = Set(PATCOBundledScheduleData.calendars.map { $0.serviceId })
         XCTAssertTrue(serviceIds.contains("WEEKDAY"))
         XCTAssertTrue(serviceIds.contains("SATURDAY"))
         XCTAssertTrue(serviceIds.contains("SUNDAY"))
     }
 
     func testWeekdayCalendarConfiguration() {
-        let weekday = BundledScheduleData.calendars.first { $0.serviceId == "WEEKDAY" }!
+        let weekday = PATCOBundledScheduleData.calendars.first { $0.serviceId == "WEEKDAY" }!
         XCTAssertEqual(weekday.monday, 1)
         XCTAssertEqual(weekday.tuesday, 1)
         XCTAssertEqual(weekday.wednesday, 1)
@@ -84,14 +84,14 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testSaturdayCalendarConfiguration() {
-        let saturday = BundledScheduleData.calendars.first { $0.serviceId == "SATURDAY" }!
+        let saturday = PATCOBundledScheduleData.calendars.first { $0.serviceId == "SATURDAY" }!
         XCTAssertEqual(saturday.monday, 0)
         XCTAssertEqual(saturday.saturday, 1)
         XCTAssertEqual(saturday.sunday, 0)
     }
 
     func testSundayCalendarConfiguration() {
-        let sunday = BundledScheduleData.calendars.first { $0.serviceId == "SUNDAY" }!
+        let sunday = PATCOBundledScheduleData.calendars.first { $0.serviceId == "SUNDAY" }!
         XCTAssertEqual(sunday.monday, 0)
         XCTAssertEqual(sunday.saturday, 0)
         XCTAssertEqual(sunday.sunday, 1)
@@ -100,7 +100,7 @@ final class BundledScheduleDataTests: XCTestCase {
     // MARK: - Schedule Generation Tests
 
     func testGenerateScheduleDataReturnsValidData() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         XCTAssertTrue(data.isLoaded)
         XCTAssertFalse(data.stops.isEmpty)
@@ -110,18 +110,18 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testGenerateScheduleDataStopsMatch() {
-        let data = BundledScheduleData.generateScheduleData()
-        XCTAssertEqual(data.stops.count, BundledScheduleData.stops.count)
+        let data = PATCOBundledScheduleData.generateScheduleData()
+        XCTAssertEqual(data.stops.count, PATCOBundledScheduleData.stops.count)
     }
 
     func testGenerateScheduleDataHasWeekdayTrips() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
         let weekdayTrips = data.trips.filter { $0.serviceId == "WEEKDAY" }
         XCTAssertFalse(weekdayTrips.isEmpty)
     }
 
     func testGenerateScheduleDataHasWeekendTrips() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
         let saturdayTrips = data.trips.filter { $0.serviceId == "SATURDAY" }
         let sundayTrips = data.trips.filter { $0.serviceId == "SUNDAY" }
         XCTAssertFalse(saturdayTrips.isEmpty)
@@ -129,7 +129,7 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testGenerateScheduleDataHasBothDirections() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         let westboundTrips = data.trips.filter { $0.directionId == 0 }
         let eastboundTrips = data.trips.filter { $0.directionId == 1 }
@@ -139,7 +139,7 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testGenerateScheduleDataTripsHaveHeadsigns() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         for trip in data.trips {
             XCTAssertNotNil(trip.headsign, "Trip \(trip.id) should have a headsign")
@@ -148,7 +148,7 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testGenerateScheduleDataStopTimesHaveValidTimes() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         for stopTime in data.stopTimes {
             // Time format should be HH:mm:ss
@@ -160,7 +160,7 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testGenerateScheduleDataStopTimesPerTrip() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         // Group stop times by trip
         var stopTimesPerTrip: [String: [GTFSStopTime]] = [:]
@@ -176,7 +176,7 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testGenerateScheduleDataStopSequenceOrdering() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
 
         // Group stop times by trip
         var stopTimesPerTrip: [String: [GTFSStopTime]] = [:]
@@ -196,7 +196,7 @@ final class BundledScheduleDataTests: XCTestCase {
     // MARK: - Weekday Schedule Tests
 
     func testWeekdayScheduleHasRushHourFrequency() {
-        let westboundDepartures = BundledScheduleData.weekdaySchedule.westboundDepartures
+        let westboundDepartures = PATCOBundledScheduleData.weekdaySchedule.westboundDepartures
 
         // Count departures between 7:00 and 8:00 (rush hour)
         let rushHourDepartures = westboundDepartures.filter { time in
@@ -209,7 +209,7 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testWeekdayScheduleCoversFullDay() {
-        let westboundDepartures = BundledScheduleData.weekdaySchedule.westboundDepartures
+        let westboundDepartures = PATCOBundledScheduleData.weekdaySchedule.westboundDepartures
 
         // Should have early morning service
         let earlyMorning = westboundDepartures.first { $0 < "06:00" }
@@ -223,15 +223,15 @@ final class BundledScheduleDataTests: XCTestCase {
     // MARK: - Weekend Schedule Tests
 
     func testWeekendScheduleHasLessFrequentService() {
-        let weekdayDepartures = BundledScheduleData.weekdaySchedule.westboundDepartures
-        let weekendDepartures = BundledScheduleData.weekendSchedule.westboundDepartures
+        let weekdayDepartures = PATCOBundledScheduleData.weekdaySchedule.westboundDepartures
+        let weekendDepartures = PATCOBundledScheduleData.weekendSchedule.westboundDepartures
 
         XCTAssertLessThan(weekendDepartures.count, weekdayDepartures.count,
             "Weekend should have fewer departures than weekday")
     }
 
     func testWeekendScheduleHasRegularIntervals() {
-        let departures = BundledScheduleData.weekendSchedule.westboundDepartures
+        let departures = PATCOBundledScheduleData.weekendSchedule.westboundDepartures
 
         // Filter daytime departures (8:00 - 20:00)
         let daytimeDepartures = departures.filter { time in
@@ -244,7 +244,7 @@ final class BundledScheduleDataTests: XCTestCase {
     // MARK: - Data Consistency Tests
 
     func testAllStopIdsInStopTimesExistInStops() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
         let stopIds = Set(data.stops.map { $0.id })
 
         for stopTime in data.stopTimes {
@@ -254,7 +254,7 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testAllTripIdsInStopTimesExistInTrips() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
         let tripIds = Set(data.trips.map { $0.id })
 
         for stopTime in data.stopTimes {
@@ -264,7 +264,7 @@ final class BundledScheduleDataTests: XCTestCase {
     }
 
     func testAllServiceIdsInTripsExistInCalendars() {
-        let data = BundledScheduleData.generateScheduleData()
+        let data = PATCOBundledScheduleData.generateScheduleData()
         let serviceIds = Set(data.calendars.map { $0.serviceId })
 
         for trip in data.trips {

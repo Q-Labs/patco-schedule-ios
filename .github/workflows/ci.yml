@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Xcode 15, iOS 17)
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 15
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Resolve Swift Packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project PATCOSchedule.xcodeproj \
+            -scheme PATCOSchedule
+
+      - name: Run Tests
+        run: |
+          xcodebuild test \
+            -project PATCOSchedule.xcodeproj \
+            -scheme PATCOSchedule \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' \
+            -resultBundlePath TestResults.xcresult \
+            -enableCodeCoverage YES \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty --report junit --output test-results.xml
+
+      - name: Coverage Summary
+        if: always()
+        run: |
+          xcrun xccov view --report TestResults.xcresult --only-targets \
+            | grep -E "PATCOSchedule|%" || true
+          xcrun xccov view --report --json TestResults.xcresult > coverage-report.json
+
+      - name: Upload .xcresult
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: TestResults-${{ github.run_number }}
+          path: TestResults.xcresult
+          retention-days: 14
+
+      - name: Upload Snapshot Failures
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: SnapshotFailures-${{ github.run_number }}
+          path: /tmp/swift-snapshot-testing/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          xcode: true
+          xcode_archive_path: TestResults.xcresult
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}

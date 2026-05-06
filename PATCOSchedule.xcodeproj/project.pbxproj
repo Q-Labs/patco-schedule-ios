@@ -29,6 +29,8 @@
 		B10000030000000000000003 /* ScheduleServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000030000000000000003 /* ScheduleServiceTests.swift */; };
 		B10000040000000000000004 /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000040000000000000004 /* IntegrationTests.swift */; };
 		B10000050000000000000005 /* LiveActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000050000000000000005 /* LiveActivityTests.swift */; };
+		B10000060000000000000006 /* SnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000060000000000000006 /* SnapshotTests.swift */; };
+		D30000010000000000000001 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = D20000010000000000000001 /* SnapshotTesting */; };
 		C10000010000000000000001 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C20000050000000000000005 /* WidgetKit.framework */; };
 		C10000020000000000000002 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C20000060000000000000006 /* SwiftUI.framework */; };
 		C10000030000000000000003 /* PATCOWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000010000000000000001 /* PATCOWidgetsBundle.swift */; };
@@ -95,6 +97,7 @@
 		B20000030000000000000003 /* ScheduleServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleServiceTests.swift; sourceTree = "<group>"; };
 		B20000040000000000000004 /* IntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationTests.swift; sourceTree = "<group>"; };
 		B20000050000000000000005 /* LiveActivityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityTests.swift; sourceTree = "<group>"; };
+		B20000060000000000000006 /* SnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTests.swift; sourceTree = "<group>"; };
 		C30000010000000000000001 /* PATCOWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PATCOWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C20000010000000000000001 /* PATCOWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PATCOWidgetsBundle.swift; sourceTree = "<group>"; };
 		C20000020000000000000002 /* PATCOLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PATCOLiveActivity.swift; sourceTree = "<group>"; };
@@ -116,6 +119,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D30000010000000000000001 /* SnapshotTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -209,6 +213,7 @@
 				B20000030000000000000003 /* ScheduleServiceTests.swift */,
 				B20000040000000000000004 /* IntegrationTests.swift */,
 				B20000050000000000000005 /* LiveActivityTests.swift */,
+				B20000060000000000000006 /* SnapshotTests.swift */,
 			);
 			path = PATCOScheduleTests;
 			sourceTree = "<group>";
@@ -267,6 +272,9 @@
 			);
 			dependencies = (
 				B60000040000000000000004 /* PBXTargetDependency */,
+			);
+			packageProductDependencies = (
+				D20000010000000000000001 /* SnapshotTesting */,
 			);
 			name = PATCOScheduleTests;
 			productName = PATCOScheduleTests;
@@ -328,6 +336,9 @@
 				A60000010000000000000001 /* PATCOSchedule */,
 				B60000010000000000000001 /* PATCOScheduleTests */,
 				C60000010000000000000001 /* PATCOWidgetsExtension */,
+			);
+			packageReferences = (
+				D10000010000000000000001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
 		};
 /* End PBXProject section */
@@ -391,6 +402,7 @@
 				B10000030000000000000003 /* ScheduleServiceTests.swift in Sources */,
 				B10000040000000000000004 /* IntegrationTests.swift in Sources */,
 				B10000050000000000000005 /* LiveActivityTests.swift in Sources */,
+				B10000060000000000000006 /* SnapshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -717,6 +729,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D10000010000000000000001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D20000010000000000000001 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D10000010000000000000001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A80000010000000000000001 /* Project object */;
 }

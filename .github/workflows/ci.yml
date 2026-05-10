@@ -14,6 +14,8 @@ jobs:
   test:
     name: Test (Xcode 15, iOS 17)
     runs-on: macos-14
+    permissions:
+      contents: write   # needed to push auto-recorded snapshot baselines
 
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +32,40 @@ jobs:
             -project PATCOSchedule.xcodeproj \
             -scheme PATCOSchedule
 
+      # Bootstrap snapshot baselines on first run when no reference images exist.
+      # Sets RECORD_SNAPSHOTS=1 so SnapshotTestCase enables isRecording, then
+      # commits the generated PNGs back to the branch.  Subsequent runs skip this
+      # step and compare against those committed baselines.
+      - name: Check for snapshot baselines
+        id: snapshots
+        run: |
+          if [ -d "PATCOScheduleTests/__Snapshots__" ] && \
+             [ "$(ls -A PATCOScheduleTests/__Snapshots__ 2>/dev/null)" ]; then
+            echo "exists=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record Snapshot Baselines
+        if: steps.snapshots.outputs.exists == 'false'
+        run: |
+          set -o pipefail
+          RECORD_SNAPSHOTS=1 xcodebuild test \
+            -project PATCOSchedule.xcodeproj \
+            -scheme PATCOSchedule \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add PATCOScheduleTests/__Snapshots__
+          git diff --cached --quiet || \
+            git commit -m "chore: record snapshot baselines [skip ci]"
+          git push
+
       - name: Run Tests
         run: |
+          set -o pipefail
           xcodebuild test \
             -project PATCOSchedule.xcodeproj \
             -scheme PATCOSchedule \

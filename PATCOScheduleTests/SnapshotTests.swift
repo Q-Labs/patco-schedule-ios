@@ -20,12 +20,21 @@ private func train(minutes: Int, headsign: String, direction: TransitDirection) 
     )
 }
 
+// MARK: - Base class
+
+/// Reads the RECORD_SNAPSHOTS environment variable set by CI when bootstrapping
+/// baselines, and locally when intentionally re-recording.  All snapshot test
+/// classes inherit from this so the flag is applied consistently.
+class SnapshotTestCase: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        isRecording = ProcessInfo.processInfo.environment["RECORD_SNAPSHOTS"] != nil
+    }
+}
+
 // MARK: - TrainRowView
 
-final class TrainRowViewSnapshotTests: XCTestCase {
-    // Uncomment the next line locally when intentionally updating reference images:
-    // override func setUp() { super.setUp(); isRecording = true }
-
+final class TrainRowViewSnapshotTests: SnapshotTestCase {
     private func snap(_ train: UpcomingTrain, _ scheme: ColorScheme, name: String,
                       file: StaticString = #file, line: UInt = #line) {
         let view = TrainRowView(train: train)
@@ -36,17 +45,17 @@ final class TrainRowViewSnapshotTests: XCTestCase {
                        named: name, file: file, line: line)
     }
 
-    func testGreenLight()  { snap(train(minutes: 8, headsign: "Lindenwold",        direction: eastbound), .light, name: "trainRow-green-light") }
-    func testGreenDark()   { snap(train(minutes: 8, headsign: "Lindenwold",        direction: eastbound), .dark,  name: "trainRow-green-dark") }
+    func testGreenLight()  { snap(train(minutes: 8, headsign: "Lindenwold",         direction: eastbound), .light, name: "trainRow-green-light") }
+    func testGreenDark()   { snap(train(minutes: 8, headsign: "Lindenwold",         direction: eastbound), .dark,  name: "trainRow-green-dark") }
     func testOrangeLight() { snap(train(minutes: 4, headsign: "15th-16th & Locust", direction: westbound), .light, name: "trainRow-orange-light") }
     func testOrangeDark()  { snap(train(minutes: 4, headsign: "15th-16th & Locust", direction: westbound), .dark,  name: "trainRow-orange-dark") }
-    func testRedLight()    { snap(train(minutes: 2, headsign: "Lindenwold",        direction: eastbound), .light, name: "trainRow-red-light") }
-    func testRedDark()     { snap(train(minutes: 2, headsign: "Lindenwold",        direction: eastbound), .dark,  name: "trainRow-red-dark") }
+    func testRedLight()    { snap(train(minutes: 2, headsign: "Lindenwold",         direction: eastbound), .light, name: "trainRow-red-light") }
+    func testRedDark()     { snap(train(minutes: 2, headsign: "Lindenwold",         direction: eastbound), .dark,  name: "trainRow-red-dark") }
 }
 
 // MARK: - TrainRowCompactView
 
-final class TrainRowCompactViewSnapshotTests: XCTestCase {
+final class TrainRowCompactViewSnapshotTests: SnapshotTestCase {
     private func snap(_ train: UpcomingTrain, _ scheme: ColorScheme, name: String,
                       file: StaticString = #file, line: UInt = #line) {
         let view = TrainRowCompactView(train: train)
@@ -64,7 +73,7 @@ final class TrainRowCompactViewSnapshotTests: XCTestCase {
 
 // MARK: - StationRowView
 
-final class StationRowViewSnapshotTests: XCTestCase {
+final class StationRowViewSnapshotTests: SnapshotTestCase {
     private let simple   = Station(id: "HADDONFIELD", name: "Haddonfield",  displayName: "Haddonfield", order: 3)
     private let subtitle = Station(id: "FERRY",       name: "Ferry Avenue", displayName: "Ferry Ave",   order: 6)
 
@@ -88,7 +97,7 @@ final class StationRowViewSnapshotTests: XCTestCase {
 
 // MARK: - StationListView
 
-final class StationListViewSnapshotTests: XCTestCase {
+final class StationListViewSnapshotTests: SnapshotTestCase {
     @MainActor func testNoSelectionLight() {
         let view = NavigationStack {
             StationListView(selectedStation: .constant(nil))

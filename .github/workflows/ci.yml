@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Xcode 15, iOS 17)
+    runs-on: macos-14
+    permissions:
+      contents: write   # needed to push auto-recorded snapshot baselines
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 15
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_15*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "No Xcode 15.x found. Available: $(ls -d /Applications/Xcode*.app 2>/dev/null | tr '\n' ' ')"
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Resolve Swift Packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project PATCOSchedule.xcodeproj \
+            -scheme PATCOSchedule
+
+      # Bootstrap snapshot baselines on first run when no reference images exist.
+      # Sets RECORD_SNAPSHOTS=1 so SnapshotTestCase enables isRecording, then
+      # commits the generated PNGs back to the branch.  Subsequent runs skip this
+      # step and compare against those committed baselines.
+      - name: Check for snapshot baselines
+        id: snapshots
+        run: |
+          if find PATCOScheduleTests/__Snapshots__ -maxdepth 1 -name "*.png" \
+               -print -quit 2>/dev/null | grep -q .; then
+            echo "exists=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Only runs on direct branch pushes (not fork PRs) when no baselines exist.
+      # Fork PRs cannot push back to the base repo, so baseline recording is
+      # skipped there — maintainers record baselines by pushing to the branch directly.
+      - name: Record Snapshot Baselines
+        if: github.event_name == 'push' && steps.snapshots.outputs.exists == 'false'
+        run: |
+          set -o pipefail
+          RECORD_SNAPSHOTS=1 xcodebuild test \
+            -project PATCOSchedule.xcodeproj \
+            -scheme PATCOSchedule \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add PATCOScheduleTests/__Snapshots__
+          git diff --cached --quiet || \
+            git commit -m "chore: record snapshot baselines [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Run Tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project PATCOSchedule.xcodeproj \
+            -scheme PATCOSchedule \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' \
+            -resultBundlePath TestResults.xcresult \
+            -enableCodeCoverage YES \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty --report junit --output test-results.xml
+
+      - name: Coverage Summary
+        if: always()
+        run: |
+          xcrun xccov view --report --json TestResults.xcresult > coverage-report.json
+          xcrun xccov view --report TestResults.xcresult --only-targets \
+            | grep -E "PATCOSchedule|%" || true
+
+      - name: Upload .xcresult
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: TestResults-${{ github.run_number }}
+          path: TestResults.xcresult
+          retention-days: 14
+
+      - name: Upload Snapshot Failures
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: SnapshotFailures-${{ github.run_number }}
+          path: /tmp/swift-snapshot-testing/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          xcode: true
+          xcode_archive_path: TestResults.xcresult
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}

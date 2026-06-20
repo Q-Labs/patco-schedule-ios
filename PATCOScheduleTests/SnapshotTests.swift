@@ -4,8 +4,8 @@ import SnapshotTesting
 @testable import PATCOSchedule
 
 private let provider  = PATCOProvider()
-private let eastbound = PATCOProvider().directions.first { $0.id == "eastbound" }!
-private let westbound = PATCOProvider().directions.first { $0.id == "westbound" }!
+private let eastbound = provider.directions.first { $0.id == "eastbound" }!
+private let westbound = provider.directions.first { $0.id == "westbound" }!
 
 /// Builds an UpcomingTrain whose minutesUntilDeparture equals `minutes`.
 /// The +30 s buffer keeps the integer stable during test execution since
@@ -29,6 +29,11 @@ class SnapshotTestCase: XCTestCase {
     override func setUp() {
         super.setUp()
         isRecording = ProcessInfo.processInfo.environment["RECORD_SNAPSHOTS"] != nil
+    }
+
+    override func tearDown() {
+        isRecording = false
+        super.tearDown()
     }
 }
 
@@ -107,9 +112,13 @@ final class StationListViewSnapshotTests: SnapshotTestCase {
                        named: "stationList-noSelection-light")
     }
 
-    @MainActor func testWithSelectionLight() {
+    @MainActor func testWithSelectionLight() throws {
+        let station = try XCTUnwrap(
+            provider.stations.first { $0.id == "HADDONFIELD" },
+            "Expected a station with id HADDONFIELD in PATCOProvider"
+        )
         let view = NavigationStack {
-            StationListView(selectedStation: .constant(provider.stations[3]))
+            StationListView(selectedStation: .constant(station))
                 .environmentObject(ScheduleService())
         }.preferredColorScheme(.light)
         assertSnapshot(of: view, as: .image(layout: .device(config: .iPhone13)),
